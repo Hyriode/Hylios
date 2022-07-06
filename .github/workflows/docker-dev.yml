@@ -1,0 +1,28 @@
+name: Docker Dev Workflow
+
+on:
+  push:
+    branches: [ develop ]
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v2
+
+      - name: Build and tag image
+        run: docker build -t "ghcr.io/hyriode/hylios:dev" -f docker/Dockerfile . --build-arg USERNAME=$GITHUB_ACTOR --build-arg TOKEN=$GITHUB_TOKEN
+        env:
+          GITHUB_TOKEN: ${{ secrets.TOKEN }}
+
+      - name: Docker login
+        run: docker login ghcr.io -u $GITHUB_ACTOR -p $GITHUB_TOKEN
+        env:
+          GITHUB_TOKEN: ${{ secrets.TOKEN }}
+        shell: bash
+
+      - name: Publish to GPR
+        run: docker push "ghcr.io/hyriode/hylios:dev"
+        shell: bash

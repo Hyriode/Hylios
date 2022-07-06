@@ -1,0 +1,63 @@
+plugins {
+    id "com.github.johnrengelman.shadow"
+}
+
+apply plugin: 'maven-publish'
+
+version = '1.0.0'
+archivesBaseName = 'Hylios-API'
+
+java {
+    withSourcesJar()
+    withJavadocJar()
+
+    toolchain {
+        languageVersion = JavaLanguageVersion.of(8)
+    }
+}
+
+compileJava {
+    sourceCompatibility = JavaVersion.VERSION_1_8
+    options.encoding = 'UTF-8'
+}
+
+tasks.withType(Javadoc) {
+    options.encoding = 'UTF-8'
+}
+
+shadowJar {
+    configurations = [project.configurations.runtimeClasspath]
+    classifier ''
+}
+
+publishing {
+    publications {
+        maven(MavenPublication) { publication ->
+            project.shadow.component(publication)
+            artifact tasks.sourcesJar
+            artifact tasks.javadocJar
+
+            pom {
+                groupId = project.group
+                artifactId = 'hylios-api'
+                version = project.version
+                name = 'HyliosAPI'
+                description = 'Official API of Hylios'
+                url = 'https://github.com/Hyriode/Hylios'
+            }
+        }
+    }
+
+    repositories {
+        maven {
+            credentials {
+                username System.getenv('USERNAME')
+                password System.getenv('TOKEN')
+            }
+            name = "Hylios_maven"
+            url = "https://maven.pkg.github.com/Hyriode/Hylios"
+        }
+    }
+}
+
+dependencies {}

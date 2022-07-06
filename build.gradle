@@ -1,0 +1,43 @@
+plugins {
+    id "com.github.johnrengelman.shadow" version "7.1.2"
+}
+
+allprojects {
+
+    apply plugin: 'idea'
+    apply plugin: 'java-library'
+
+    group = 'fr.hyriode'
+
+    repositories {
+        mavenCentral()
+    }
+
+}
+
+version = '1.0.0'
+archivesBaseName = 'Hylios'
+
+java {
+    toolchain {
+        languageVersion = JavaLanguageVersion.of(18)
+    }
+}
+
+compileJava {
+    sourceCompatibility = JavaVersion.VERSION_18
+    options.encoding = 'UTF-8'
+}
+
+shadowJar {
+    configurations = [project.configurations.runtimeClasspath]
+    archiveVersion.set('')
+    manifest {
+        attributes 'Main-Class': 'fr.hyriode.hylios.HyliosBootstrap'
+    }
+}
+
+dependencies {
+    implementation project(':API')
+    implementation 'jline:jline:2.14.6'
+}
