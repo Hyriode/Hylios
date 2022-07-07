@@ -1,5 +1,5 @@
 # Build Application Jar
-FROM gradle:7.4.2-jdk18-alpine AS build
+FROM gradle:7.4.2-jdk18 AS build
 
 WORKDIR /usr/app/
 
