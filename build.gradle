@@ -38,6 +38,7 @@ shadowJar {
 }
 
 dependencies {
+    implementation fileTree(include: ['*.jar'], dir: 'libs')
     implementation project(':API')
     implementation 'jline:jline:2.14.6'
 }
