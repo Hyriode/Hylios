@@ -1,9 +1,6 @@
 package fr.hyriode.hylios.api.queue.packet;
 
 import fr.hyriode.api.packet.HyriPacket;
-import fr.hyriode.hyggdrasil.api.queue.HyggQueueGroup;
-import fr.hyriode.hyggdrasil.api.queue.HyggQueueInfo;
-import fr.hyriode.hyggdrasil.api.queue.HyggQueuePlayer;
 import fr.hyriode.hylios.api.queue.QueueGroup;
 import fr.hyriode.hylios.api.queue.QueueInfo;
 import fr.hyriode.hylios.api.queue.QueuePlayer;
