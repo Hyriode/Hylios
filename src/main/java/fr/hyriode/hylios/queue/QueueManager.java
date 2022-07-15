@@ -35,7 +35,7 @@ public class QueueManager {
     private final Map<String, Queue> queues;
 
     public QueueManager() {
-        this.eventBus = HyriAPI.get().getEventBus();
+        this.eventBus = HyriAPI.get().getNetworkManager().getEventBus();
         this.queues = new ConcurrentHashMap<>();
 
         HyriAPI.get().getPubSub().subscribe(QueueAPI.CHANNEL, new QueueReceiver(this));
