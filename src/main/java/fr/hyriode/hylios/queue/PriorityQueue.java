@@ -8,7 +8,6 @@ import java.util.concurrent.PriorityBlockingQueue;
 import java.util.concurrent.locks.ReentrantLock;
 
 /**
- * Project: Hyggdrasil
  * Created by AstFaster
  * on 17/04/2022 at 09:39
  */

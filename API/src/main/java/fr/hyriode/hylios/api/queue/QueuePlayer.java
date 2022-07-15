@@ -3,7 +3,6 @@ package fr.hyriode.hylios.api.queue;
 import java.util.UUID;
 
 /**
- * Project: Hyggdrasil
  * Created by AstFaster
  * on 16/04/2022 at 12:50
  */

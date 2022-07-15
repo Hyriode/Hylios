@@ -26,7 +26,6 @@ import static fr.hyriode.hylios.api.queue.event.QueueGroupEvent.IType;
 import static fr.hyriode.hylios.api.queue.event.QueueGroupEvent.Type;
 
 /**
- * Project: Hyggdrasil
  * Created by AstFaster
  * on 16/04/2022 at 09:10
  */

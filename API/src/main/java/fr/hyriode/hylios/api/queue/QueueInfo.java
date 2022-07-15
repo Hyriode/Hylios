@@ -1,7 +1,6 @@
 package fr.hyriode.hylios.api.queue;
 
 /**
- * Project: Hyggdrasil
  * Created by AstFaster
  * on 10/05/2022 at 16:32
  */
