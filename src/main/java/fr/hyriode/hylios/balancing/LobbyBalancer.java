@@ -43,8 +43,6 @@ public class LobbyBalancer {
         final IHyriScheduler scheduler = HyriAPI.get().getScheduler();
 
         HyriAPI.get().getRedisProcessor().process(jedis -> {
-            System.out.println("Removing old lobbies from balancer...");
-
             for (String lobby : jedis.zrange(LobbyAPI.REDIS_KEY, 0, -1)) {
                 jedis.zrem(LobbyAPI.REDIS_KEY, lobby);
             }
