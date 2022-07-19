@@ -128,13 +128,17 @@ public class QueueGroup {
     }
 
     public void send(HyggServer server) {
+        for (QueuePlayer member : this.players) {
+            HyriAPI.get().getQueueManager().removePlayerQueue(member.getUniqueId());
+        }
+
+        HyriAPI.get().getQueueManager().removePartyQueue(this.id);
+
         if (this.players.size() == 1) {
             final UUID leaderId = this.leader.getUniqueId();
 
-            HyriAPI.get().getQueueManager().removePlayerQueue(leaderId);
             HyriAPI.get().getServerManager().sendPlayerToServer(leaderId, server.getName());
         } else {
-            HyriAPI.get().getQueueManager().removePartyQueue(this.id);
             HyriAPI.get().getServerManager().sendPartyToServer(this.id, server.getName());
         }
     }

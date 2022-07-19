@@ -11,6 +11,16 @@ allprojects {
 
     repositories {
         mavenCentral()
+
+        maven {
+            name = 'HyriAPI_maven'
+            url = 'https://maven.pkg.github.com/Hyriode/HyriAPI/'
+
+            credentials {
+                username System.getenv('USERNAME')
+                password System.getenv('TOKEN')
+            }
+        }
     }
 
 }
@@ -38,7 +48,7 @@ shadowJar {
 }
 
 dependencies {
-    implementation fileTree(include: ['*.jar'], dir: 'libs')
     implementation project(':API')
+    implementation 'fr.hyriode:hyriapi-app:1.2.7'
     implementation 'jline:jline:2.14.6'
 }

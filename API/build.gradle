@@ -1,7 +1,3 @@
-plugins {
-    id "com.github.johnrengelman.shadow"
-}
-
 apply plugin: 'maven-publish'
 
 version = '1.0.0'
@@ -25,17 +21,10 @@ tasks.withType(Javadoc) {
     options.encoding = 'UTF-8'
 }
 
-shadowJar {
-    configurations = [project.configurations.runtimeClasspath]
-    classifier ''
-}
-
 publishing {
     publications {
-        maven(MavenPublication) { publication ->
-            project.shadow.component(publication)
-            artifact tasks.sourcesJar
-            artifact tasks.javadocJar
+        maven(MavenPublication) {
+            from components.java
 
             pom {
                 groupId = project.group
@@ -61,5 +50,5 @@ publishing {
 }
 
 dependencies {
-    implementation fileTree(include: ['*.jar'], dir: 'libs')
+    implementation 'fr.hyriode:hyriapi:1.2.7'
 }

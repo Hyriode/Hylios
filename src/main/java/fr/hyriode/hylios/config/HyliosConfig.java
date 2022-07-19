@@ -15,7 +15,7 @@ import java.nio.file.Paths;
  */
 public class HyliosConfig {
 
-    public static final Path CONFIG_FILE = Paths.get("config.json");
+    public static final Path CONFIG_FILE = Paths.get("data/config.json");
 
     private final HyriRedisConfig redisConfig;
     private final HyriMongoDBConfig mongoDBConfig;
