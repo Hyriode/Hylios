@@ -49,6 +49,6 @@ shadowJar {
 
 dependencies {
     implementation project(':API')
-    implementation 'fr.hyriode:hyriapi-app:1.2.7'
+    implementation 'fr.hyriode:hyriapi-app:1.2.8'
     implementation 'jline:jline:2.14.6'
 }
