@@ -5,6 +5,7 @@ import fr.hyriode.api.scheduler.IHyriScheduler;
 import fr.hyriode.api.scheduler.IHyriTask;
 import fr.hyriode.hyggdrasil.api.protocol.environment.HyggData;
 import fr.hyriode.hyggdrasil.api.server.HyggServer;
+import fr.hyriode.hyggdrasil.api.server.HyggServerOptions;
 import fr.hyriode.hyggdrasil.api.server.HyggServerRequest;
 import fr.hyriode.hylios.api.queue.QueueAPI;
 import fr.hyriode.hylios.api.queue.QueueGroup;
@@ -112,7 +113,7 @@ public class Queue {
             currentPlayers += server.getPlayingPlayers().size();
         }
 
-        final int neededServers = (int) Math.ceil((double) currentPlayers / slots) + 1;
+        final int neededServers = slots == -1 && currentServers.size() == 0 ? 1 : (int) Math.ceil((double) currentPlayers / slots) + 1;
 
         if (currentPlayers == 0) {
             return;
@@ -129,7 +130,8 @@ public class Queue {
 
             final HyggServerRequest request = new HyggServerRequest()
                     .withServerType(this.info.getGame())
-                    .withServerData(data);
+                    .withServerData(data)
+                    .withServerOptions(new HyggServerOptions());
 
             HyriAPI.get().getServerManager().createServer(request, null);
         }

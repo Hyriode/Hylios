@@ -50,5 +50,5 @@ publishing {
 }
 
 dependencies {
-    implementation 'fr.hyriode:hyriapi:1.2.7'
+    implementation 'fr.hyriode:hyriapi:1.2.8'
 }

@@ -34,6 +34,9 @@ public class Hylios {
         IOUtil.createDirectory(References.LOG_FOLDER);
 
         this.logger = new ColoredLogger(References.NAME, References.LOG_FILE);
+
+        System.out.println("Starting Hylios...");
+
         this.config = HyliosConfig.load();
         this.api = new HyliosAPI();
         this.hyriAPI = new HyriAPIImpl(new HyriAPIConfig.Builder()

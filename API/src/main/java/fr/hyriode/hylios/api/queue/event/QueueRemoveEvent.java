@@ -9,7 +9,7 @@ import fr.hyriode.hylios.api.queue.QueueInfo;
  */
 public class QueueRemoveEvent extends QueueGroupEvent {
 
-    public QueueRemoveEvent(IType type, QueueGroup group, QueueInfo queueInfo) {
+    public QueueRemoveEvent(Type type, QueueGroup group, QueueInfo queueInfo) {
         super(type, group, queueInfo);
     }
 

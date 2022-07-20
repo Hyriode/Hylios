@@ -49,6 +49,7 @@ shadowJar {
 
 dependencies {
     implementation project(':API')
-    implementation 'fr.hyriode:hyriapi-app:1.2.8'
+    implementation fileTree(dir: 'libs', include: ['*.jar'])
+    //implementation 'fr.hyriode:hyriapi-app:1.2.8'
     implementation 'jline:jline:2.14.6'
 }

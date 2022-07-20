@@ -22,7 +22,6 @@ import java.util.Map;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
 
-import static fr.hyriode.hylios.api.queue.event.QueueGroupEvent.IType;
 import static fr.hyriode.hylios.api.queue.event.QueueGroupEvent.Type;
 
 /**
@@ -64,7 +63,7 @@ public class QueueManager {
         final Queue queue = this.getQueue(game, gameType, map);
         final Queue currentQueue = this.getCurrentPlayerQueue(group.getId());
 
-        IType responseType = Type.OK;
+        Type responseType = Type.OK;
 
         if (queue.equals(currentQueue)) {
             responseType = Type.ALREADY_IN;
@@ -93,8 +92,9 @@ public class QueueManager {
         final UUID playerId = packet.getPlayerId();
         final Queue queue = this.getCurrentPlayerQueue(playerId);
         final QueueGroup group = queue != null ? queue.getPlayerGroup(playerId) : null;
+        final QueueGroup result = group != null ? group.clone() : null;
 
-        IType responseType = Type.UNKNOWN;
+        Type responseType = Type.UNKNOWN;
 
         if (queue == null) {
             responseType = Type.NOT_IN_QUEUE;
@@ -106,7 +106,7 @@ public class QueueManager {
             }
         }
 
-        this.eventBus.publish(new QueueRemoveEvent(responseType, group, queue != null ? queue.getInfo() : null));
+        this.eventBus.publish(new QueueRemoveEvent(responseType, result, queue != null ? queue.getInfo() : null));
     }
 
     public void handlePacket(QueueRemoveGroupPacket packet) {
@@ -114,7 +114,7 @@ public class QueueManager {
         final Queue queue = this.getCurrentGroupQueue(groupId);
         final QueueGroup group = queue != null ? queue.getGroup(groupId) : null;
 
-        IType responseType = Type.UNKNOWN;
+        Type responseType = Type.UNKNOWN;
 
         if (queue == null) {
             responseType = Type.NOT_IN_QUEUE;
@@ -142,7 +142,7 @@ public class QueueManager {
         final UUID groupId = group.getId();
         final Queue queue = this.getCurrentGroupQueue(groupId);
 
-        IType responseType = Type.OK;
+        Type responseType = Type.OK;
 
         if (queue == null) {
             responseType = Type.NOT_IN_QUEUE;
