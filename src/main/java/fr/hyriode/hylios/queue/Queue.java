@@ -113,7 +113,7 @@ public class Queue {
             currentPlayers += server.getPlayingPlayers().size();
         }
 
-        final int neededServers = slots == -1 && currentServers.size() == 0 ? 1 : (int) Math.ceil((double) currentPlayers / slots) + 1;
+        final int neededServers = slots == -1 ? 1 : (int) Math.ceil((double) currentPlayers / slots) + 1;
 
         if (currentPlayers == 0) {
             return;

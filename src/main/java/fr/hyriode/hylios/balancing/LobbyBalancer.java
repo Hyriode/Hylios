@@ -7,16 +7,14 @@ import fr.hyriode.hyggdrasil.api.event.model.server.HyggServerStoppedEvent;
 import fr.hyriode.hyggdrasil.api.event.model.server.HyggServerUpdatedEvent;
 import fr.hyriode.hyggdrasil.api.protocol.environment.HyggData;
 import fr.hyriode.hyggdrasil.api.server.HyggServer;
+import fr.hyriode.hyggdrasil.api.server.HyggServerOptions;
 import fr.hyriode.hyggdrasil.api.server.HyggServerRequest;
 import fr.hyriode.hyggdrasil.api.server.HyggServerState;
 import fr.hyriode.hylios.Hylios;
 import fr.hyriode.hylios.api.lobby.LobbyAPI;
 
-import java.util.ArrayList;
 import java.util.HashSet;
-import java.util.List;
 import java.util.Set;
-import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.TimeUnit;
 
 /**
@@ -59,7 +57,7 @@ public class LobbyBalancer {
             }
         }), 800, 800, TimeUnit.MILLISECONDS);
 
-        scheduler.schedule(this::process, 500, 500, TimeUnit.MILLISECONDS);
+        scheduler.schedule(this::process, 10 * 1000, 500, TimeUnit.MILLISECONDS);
     }
 
     public void onUpdate(HyggServer server) {
@@ -90,7 +88,7 @@ public class LobbyBalancer {
             for (int i = neededLobbies - lobbiesNumber; i > 0; i--) {
                 this.startLobby();
             }
-        } else if (lobbiesNumber > neededLobbies && this.lobbies.size() > 1) {
+        } else if (lobbiesNumber > neededLobbies) {
             for (String serverName : this.lobbies) {
                 final HyggServer server = HyriAPI.get().getServerManager().getServer(serverName);
 
@@ -98,15 +96,15 @@ public class LobbyBalancer {
                     continue;
                 }
 
-                if (server.getPlayers().size() <= LobbyAPI.MIN_PLAYERS) {
+                if (server.getPlayers().size() <= LobbyAPI.MIN_PLAYERS && this.lobbies.size() > 1) {
                     final String bestLobby = Hylios.get().getAPI().getLobbyAPI().getBestLobby();
 
                     if (bestLobby.equals(server.getName())) {
-                        continue;
+                        return;
                     }
 
                     HyriAPI.get().getServerManager().evacuateServer(serverName, bestLobby);
-                    HyriAPI.get().getScheduler().schedule(() -> HyriAPI.get().getServerManager().removeServer(serverName, null), 5, TimeUnit.SECONDS);
+                    HyriAPI.get().getServerManager().removeServer(serverName, null);
                     return;
                 }
             }
@@ -120,15 +118,16 @@ public class LobbyBalancer {
         data.add(HyggServer.SUB_TYPE_KEY, LobbyAPI.SUBTYPE);
 
         final HyggServerRequest request = new HyggServerRequest()
+                .withServerData(data)
+                .withServerOptions(new HyggServerOptions())
                 .withServerType(LobbyAPI.TYPE)
-                .withGameType(LobbyAPI.SUBTYPE)
-                .withServerData(data);
+                .withGameType(LobbyAPI.SUBTYPE);
 
         HyriAPI.get().getHyggdrasilManager().getHyggdrasilAPI().getServerRequester().createServer(request, server -> this.startedLobbies.add(server.getName()));
     }
 
     private int neededLobbies() {
-        return (int) Math.ceil((double) this.getPlayersOnLobbies() * 1.1 / LobbyAPI.MAX_PLAYERS);
+        return this.lobbies.size() < 1 ? 1 : (int) Math.ceil((double) this.getPlayersOnLobbies() * 1.1 / LobbyAPI.MAX_PLAYERS);
     }
 
     public void removeLobby(HyggServer server) {

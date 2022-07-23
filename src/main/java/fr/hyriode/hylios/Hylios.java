@@ -4,6 +4,7 @@ import fr.hyriode.api.impl.application.HyriAPIImpl;
 import fr.hyriode.api.impl.application.config.HyriAPIConfig;
 import fr.hyriode.hylios.api.HyliosAPI;
 import fr.hyriode.hylios.balancing.LobbyBalancer;
+import fr.hyriode.hylios.balancing.ProxyBalancer;
 import fr.hyriode.hylios.config.HyliosConfig;
 import fr.hyriode.hylios.queue.QueueManager;
 import fr.hyriode.hylios.util.IOUtil;
@@ -25,6 +26,7 @@ public class Hylios {
     private HyriAPIImpl hyriAPI;
 
     private LobbyBalancer lobbyBalancer;
+    private ProxyBalancer proxyBalancer;
     private QueueManager queueManager;
 
     public void start() {
@@ -46,6 +48,7 @@ public class Hylios {
                 .withHyggdrasil(true)
                 .build(), References.NAME);
         this.lobbyBalancer = new LobbyBalancer();
+        this.proxyBalancer = new ProxyBalancer();
         this.queueManager = new QueueManager();
 
         Runtime.getRuntime().addShutdownHook(new Thread(this::stop));
@@ -79,6 +82,10 @@ public class Hylios {
 
     public LobbyBalancer getLobbyBalancer() {
         return this.lobbyBalancer;
+    }
+
+    public ProxyBalancer getProxyBalancer() {
+        return this.proxyBalancer;
     }
 
     public QueueManager getQueueManager() {
