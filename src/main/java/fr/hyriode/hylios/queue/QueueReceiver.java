@@ -7,6 +7,8 @@ import fr.hyriode.hylios.api.queue.packet.group.QueueRemoveGroupPacket;
 import fr.hyriode.hylios.api.queue.packet.group.QueueUpdateGroupPacket;
 import fr.hyriode.hylios.api.queue.packet.player.QueueAddPlayerPacket;
 import fr.hyriode.hylios.api.queue.packet.player.QueueRemovePlayerPacket;
+import fr.hyriode.hylios.api.queue.server.packet.group.SQueueAddGroupPacket;
+import fr.hyriode.hylios.api.queue.server.packet.player.SQueueAddPlayerPacket;
 
 /**
  * Created by AstFaster
@@ -31,6 +33,10 @@ public class QueueReceiver implements IHyriPacketReceiver {
         } else if (packet instanceof final QueueRemovePlayerPacket queuePacket) {
             this.queueManager.handlePacket(queuePacket);
         } else if (packet instanceof final QueueRemoveGroupPacket queuePacket) {
+            this.queueManager.handlePacket(queuePacket);
+        } else if (packet instanceof final SQueueAddPlayerPacket queuePacket) {
+            this.queueManager.handlePacket(queuePacket);
+        } else if (packet instanceof final SQueueAddGroupPacket queuePacket) {
             this.queueManager.handlePacket(queuePacket);
         }
     }

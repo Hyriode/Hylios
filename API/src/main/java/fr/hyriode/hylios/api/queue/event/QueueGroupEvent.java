@@ -10,17 +10,17 @@ import fr.hyriode.hylios.api.queue.QueueInfo;
  */
 public abstract class QueueGroupEvent extends HyriEvent {
 
-    private final Type type;
+    private final QueueEventType type;
     private final QueueGroup group;
     private final QueueInfo queueInfo;
 
-    public QueueGroupEvent(Type type, QueueGroup group, QueueInfo queueInfo) {
+    public QueueGroupEvent(QueueEventType type, QueueGroup group, QueueInfo queueInfo) {
         this.type = type;
         this.group = group;
         this.queueInfo = queueInfo;
     }
 
-    public Type getType() {
+    public QueueEventType getType() {
         return this.type;
     }
 
@@ -30,13 +30,6 @@ public abstract class QueueGroupEvent extends HyriEvent {
 
     public QueueInfo getQueueInfo() {
         return this.queueInfo;
-    }
-
-    public enum Type {
-        OK,
-        NOT_IN_QUEUE,
-        ALREADY_IN,
-        UNKNOWN
     }
 
 }

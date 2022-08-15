@@ -6,6 +6,8 @@ import fr.hyriode.hylios.api.HyliosAPI;
 import fr.hyriode.hylios.balancing.LobbyBalancer;
 import fr.hyriode.hylios.balancing.ProxyBalancer;
 import fr.hyriode.hylios.config.HyliosConfig;
+import fr.hyriode.hylios.game.rotating.RotatingGameTask;
+import fr.hyriode.hylios.host.HostManager;
 import fr.hyriode.hylios.queue.QueueManager;
 import fr.hyriode.hylios.util.IOUtil;
 import fr.hyriode.hylios.util.References;
@@ -28,6 +30,7 @@ public class Hylios {
     private LobbyBalancer lobbyBalancer;
     private ProxyBalancer proxyBalancer;
     private QueueManager queueManager;
+    private HostManager hostManager;
 
     public void start() {
         instance = this;
@@ -50,6 +53,9 @@ public class Hylios {
         this.lobbyBalancer = new LobbyBalancer();
         this.proxyBalancer = new ProxyBalancer();
         this.queueManager = new QueueManager();
+        this.hostManager = new HostManager();
+
+        new RotatingGameTask().start();
 
         Runtime.getRuntime().addShutdownHook(new Thread(this::stop));
     }
@@ -90,6 +96,10 @@ public class Hylios {
 
     public QueueManager getQueueManager() {
         return this.queueManager;
+    }
+
+    public HostManager getHostManager() {
+        return this.hostManager;
     }
 
 }
