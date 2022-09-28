@@ -31,10 +31,10 @@ class QueueHandler extends PriorityBlockingQueue<QueueGroup> {
 
         try {
             int remainingElements = maxElements;
-            int j = 0;
+            int groupIndex = 0;
 
             for (int i = 0; i < this.size(); i++) {
-                final QueueGroup group = (QueueGroup) this.toArray()[j];
+                final QueueGroup group = (QueueGroup) this.toArray()[groupIndex];
                 final int groupSize = group.getSize();
 
                 if (remainingElements - groupSize >= 0) {
@@ -42,7 +42,7 @@ class QueueHandler extends PriorityBlockingQueue<QueueGroup> {
 
                     remainingElements -= groupSize;
                 } else {
-                    j++;
+                    groupIndex++;
                 }
 
                 if (remainingElements <= 0) {

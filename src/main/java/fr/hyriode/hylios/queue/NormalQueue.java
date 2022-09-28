@@ -44,6 +44,7 @@ public class NormalQueue extends Queue {
         final List<HyggServer> availableServers = this.getAvailableServers();
 
         availableServers.sort(Comparator.comparingInt(server -> server.getPlayingPlayers().size()));
+
         Collections.reverse(availableServers);
 
         this.anticipateServers(availableServers);
