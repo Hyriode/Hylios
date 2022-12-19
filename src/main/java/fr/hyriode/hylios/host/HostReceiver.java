@@ -1,8 +1,8 @@
 package fr.hyriode.hylios.host;
 
+import fr.hyriode.api.host.HostRequest;
 import fr.hyriode.api.packet.HyriPacket;
 import fr.hyriode.api.packet.IHyriPacketReceiver;
-import fr.hyriode.hylios.api.host.packet.HostCreatePacket;
 
 /**
  * Created by AstFaster
@@ -18,8 +18,8 @@ public class HostReceiver implements IHyriPacketReceiver {
 
     @Override
     public void receive(String channel, HyriPacket packet) {
-        if (packet instanceof final HostCreatePacket hostPacket) {
-            this.hostManager.createHost(hostPacket.getRequest());
+        if (packet instanceof final HostRequest request) {
+            this.hostManager.createHost(request);
         }
     }
 

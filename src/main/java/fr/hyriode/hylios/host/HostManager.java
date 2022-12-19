@@ -1,20 +1,14 @@
 package fr.hyriode.hylios.host;
 
 import fr.hyriode.api.HyriAPI;
-import fr.hyriode.api.player.IHyriPlayer;
-import fr.hyriode.api.server.IHyriServerManager;
+import fr.hyriode.api.host.HostData;
+import fr.hyriode.api.host.HostRequest;
+import fr.hyriode.api.host.IHostManager;
 import fr.hyriode.hyggdrasil.api.event.HyggEventBus;
 import fr.hyriode.hyggdrasil.api.event.model.server.HyggServerUpdatedEvent;
-import fr.hyriode.hyggdrasil.api.protocol.environment.HyggData;
+import fr.hyriode.hyggdrasil.api.protocol.data.HyggData;
 import fr.hyriode.hyggdrasil.api.server.HyggServer;
-import fr.hyriode.hyggdrasil.api.server.HyggServerOptions;
-import fr.hyriode.hyggdrasil.api.server.HyggServerRequest;
-import fr.hyriode.hyggdrasil.api.server.HyggServerState;
-import fr.hyriode.hylios.Hylios;
-import fr.hyriode.hylios.api.host.HostAPI;
-import fr.hyriode.hylios.api.host.HostData;
-import fr.hyriode.hylios.api.host.HostRequest;
-import fr.hyriode.hylios.api.host.event.HostCreatedEvent;
+import fr.hyriode.hyggdrasil.api.server.HyggServerCreationInfo;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -28,24 +22,24 @@ public class HostManager {
 
     private final List<String> startedServers;
 
-    private final HostAPI api;
+    private final IHostManager api;
 
     public HostManager() {
-        this.api = Hylios.get().getAPI().getHostAPI();
+        this.api = HyriAPI.get().getHostManager();
         this.startedServers = new ArrayList<>();
 
         final HyggEventBus eventBus = HyriAPI.get().getHyggdrasilManager().getHyggdrasilAPI().getEventBus();
 
         eventBus.subscribe(HyggServerUpdatedEvent.class, event -> this.onServerUpdated(event.getServer()));
 
-        HyriAPI.get().getPubSub().subscribe(HostAPI.CHANNEL, new HostReceiver(this));
+        HyriAPI.get().getPubSub().subscribe(IHostManager.CHANNEL, new HostReceiver(this));
         HyriAPI.get().getNetworkManager().getEventBus().register(new HostListener(this));
     }
 
     private void onServerUpdated(HyggServer server) {
         final String serverName = server.getName();
 
-        if (server.getState() == HyggServerState.READY && this.startedServers.remove(serverName)) {
+        if (server.getState() == HyggServer.State.READY && this.startedServers.remove(serverName)) {
             final HostData hostData = this.api.getHostData(server);
 
             if (hostData == null) {
@@ -53,14 +47,12 @@ public class HostManager {
             }
 
             final UUID owner = hostData.getOwner();
-            final IHyriPlayer ownerAccount = IHyriPlayer.get(owner);
 
-            if (!ownerAccount.isOnline()) {
+            if (!HyriAPI.get().getPlayerManager().isOnline(owner)) {
                 HyriAPI.get().getServerManager().removeServer(serverName, null);
                 return;
             }
 
-            HyriAPI.get().getNetworkManager().getEventBus().publish(new HostCreatedEvent(server, hostData));
             HyriAPI.get().getServerManager().sendPlayerToServer(owner, serverName);
         }
     }
@@ -70,48 +62,32 @@ public class HostManager {
         final String gameType = request.getGameType();
         final HyggData serverData = new HyggData();
 
-        serverData.add(HostAPI.DATA_KEY, HyriAPI.GSON.toJson(new HostData(request.getHostType(), request.getOwner(), game, gameType, "Host " + HyriAPI.get().getGameManager().getGameInfo(game).getDisplayName())));
+        serverData.add(IHostManager.DATA_KEY, HyriAPI.GSON.toJson(new HostData(request.getHostType(), request.getOwner(), "Host " + HyriAPI.get().getGameManager().getGameInfo(game).getDisplayName())));
 
-        final HyggServerRequest serverRequest = new HyggServerRequest()
-                .withServerData(serverData)
-                .withServerOptions(new HyggServerOptions())
-                .withServerType(game)
-                .withGameType(gameType);
+        final HyggServerCreationInfo serverRequest = new HyggServerCreationInfo(game)
+                .withType(game)
+                .withGameType(gameType)
+                .withAccessibility(HyggServer.Accessibility.HOST)
+                .withProcess(HyggServer.Process.TEMPORARY)
+                .withData(serverData);
 
         HyriAPI.get().getServerManager().createServer(serverRequest, server -> this.startedServers.add(server.getName()));
     }
 
     public void removePlayerHost(UUID playerId) {
         final HyggServer server = this.getPlayerHost(playerId);
-        final Runnable removeTask = () -> {
-            if (server == null) {
-                return;
-            }
-
-            final String serverName = server.getName();
-            final IHyriServerManager serverManager = HyriAPI.get().getServerManager();
-
-            serverManager.evacuateServer(serverName, serverManager.getLobby().getName());
-            serverManager.removeServer(serverName, null);
-        };
 
         if (server == null) {
             return;
         }
 
-        final HyggServerState state = server.getState();
+        final HyggServer.State state = server.getState();
 
-        if (state == HyggServerState.STARTING || state == HyggServerState.CREATING) {
-            removeTask.run();
-            return;
-        }
+        if (state == HyggServer.State.CREATING || state == HyggServer.State.STARTING || state == HyggServer.State.READY) {
+            final String serverName = server.getName();
 
-        if (!server.getPlayers().contains(playerId)) {
-            return;
-        }
-
-        if (state == HyggServerState.READY) {
-            removeTask.run();
+            HyriAPI.get().getLobbyAPI().evacuateToLobby(serverName);
+            HyriAPI.get().getServerManager().removeServer(serverName, null);
         }
     }
 

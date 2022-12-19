@@ -2,8 +2,8 @@ package fr.hyriode.hylios.config;
 
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
-import fr.hyriode.api.config.HyriMongoDBConfig;
-import fr.hyriode.api.config.HyriRedisConfig;
+import fr.hyriode.api.config.MongoDBConfig;
+import fr.hyriode.api.config.RedisConfig;
 import fr.hyriode.hylios.util.IOUtil;
 
 import java.nio.file.Path;
@@ -17,19 +17,19 @@ public class HyliosConfig {
 
     public static final Path CONFIG_FILE = Paths.get("data/config.json");
 
-    private final HyriRedisConfig redisConfig;
-    private final HyriMongoDBConfig mongoDBConfig;
+    private final RedisConfig redisConfig;
+    private final MongoDBConfig mongoDBConfig;
 
-    public HyliosConfig(HyriRedisConfig redisConfig, HyriMongoDBConfig mongoDBConfig) {
+    public HyliosConfig(RedisConfig redisConfig, MongoDBConfig mongoDBConfig) {
         this.redisConfig = redisConfig;
         this.mongoDBConfig = mongoDBConfig;
     }
 
-    public HyriRedisConfig getRedisConfig() {
+    public RedisConfig getRedisConfig() {
         return this.redisConfig;
     }
 
-    public HyriMongoDBConfig getMongoDBConfig() {
+    public MongoDBConfig getMongoDBConfig() {
         return this.mongoDBConfig;
     }
 
@@ -46,7 +46,7 @@ public class HyliosConfig {
         if (!json.equals("")) {
             return gson.fromJson(json, HyliosConfig.class);
         } else {
-            final HyliosConfig config = new HyliosConfig(new HyriRedisConfig("127.0.0.1", 6379, ""), new HyriMongoDBConfig(null, null, "127.0.0.1", 27017));
+            final HyliosConfig config = new HyliosConfig(new RedisConfig("127.0.0.1", 6379, ""), new MongoDBConfig(null, null, "127.0.0.1", 27017));
 
             IOUtil.save(CONFIG_FILE, gson.toJson(config));
 

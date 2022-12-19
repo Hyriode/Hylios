@@ -1,0 +1,56 @@
+package fr.hyriode.hylios.world;
+
+import fr.hyriode.api.HyriAPI;
+import fr.hyriode.api.world.generation.IWorldGenerationAPI;
+import fr.hyriode.api.world.generation.WorldGenerationData;
+import fr.hyriode.api.world.generation.WorldGenerationType;
+import fr.hyriode.hyggdrasil.api.protocol.data.HyggData;
+import fr.hyriode.hyggdrasil.api.server.HyggServer;
+import fr.hyriode.hyggdrasil.api.server.HyggServerCreationInfo;
+
+import java.util.List;
+import java.util.concurrent.TimeUnit;
+
+/**
+ * Created by AstFaster
+ * on 26/10/2022 at 09:45
+ */
+public class WorldGenerationHandler {
+
+    public static final int MIN_WORLDS = 50;
+
+    public WorldGenerationHandler() {
+        HyriAPI.get().getScheduler().schedule(this::process, 0, 30, TimeUnit.MINUTES);
+    }
+
+    private void process() {
+        for (WorldGenerationType type : WorldGenerationType.values()) {
+            final List<String> worlds = HyriAPI.get().getWorldGenerationAPI().getWorlds(type);
+
+            if (worlds.size() >= MIN_WORLDS) {
+                continue;
+            }
+
+            final int neededWorlds = MIN_WORLDS - worlds.size();
+            final int neededServers = (int) Math.ceil((double) neededWorlds / 5);
+
+            int remainingWorlds = neededWorlds;
+
+            for (int i = 0; i < neededServers; i++) {
+                final HyggData data = new HyggData();
+
+                data.add(IWorldGenerationAPI.DATA_KEY, HyriAPI.GSON.toJson(new WorldGenerationData(type, Math.min(remainingWorlds, 5))));
+
+                final HyggServerCreationInfo request = new HyggServerCreationInfo(IWorldGenerationAPI.SERVERS_TYPE)
+                        .withAccessibility(HyggServer.Accessibility.PUBLIC)
+                        .withProcess(HyggServer.Process.TEMPORARY)
+                        .withData(data);
+
+                HyriAPI.get().getServerManager().createServer(request, null);
+
+                remainingWorlds -= 5;
+            }
+        }
+    }
+
+}

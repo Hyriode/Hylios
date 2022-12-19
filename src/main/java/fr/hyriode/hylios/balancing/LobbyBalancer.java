@@ -2,20 +2,15 @@ package fr.hyriode.hylios.balancing;
 
 import fr.hyriode.api.HyriAPI;
 import fr.hyriode.api.scheduler.IHyriScheduler;
-import fr.hyriode.hyggdrasil.api.event.HyggEventBus;
-import fr.hyriode.hyggdrasil.api.event.model.server.HyggServerStoppedEvent;
-import fr.hyriode.hyggdrasil.api.event.model.server.HyggServerUpdatedEvent;
-import fr.hyriode.hyggdrasil.api.protocol.environment.HyggData;
+import fr.hyriode.api.server.ILobbyAPI;
 import fr.hyriode.hyggdrasil.api.server.HyggServer;
-import fr.hyriode.hyggdrasil.api.server.HyggServerOptions;
-import fr.hyriode.hyggdrasil.api.server.HyggServerRequest;
-import fr.hyriode.hyggdrasil.api.server.HyggServerState;
-import fr.hyriode.hylios.Hylios;
-import fr.hyriode.hylios.api.lobby.LobbyAPI;
+import fr.hyriode.hyggdrasil.api.server.HyggServerCreationInfo;
+import fr.hyriode.hylios.util.HyliosException;
 
-import java.util.HashSet;
-import java.util.Set;
+import java.util.*;
+import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.TimeUnit;
+import java.util.stream.Collectors;
 
 /**
  * Created by AstFaster
@@ -23,133 +18,101 @@ import java.util.concurrent.TimeUnit;
  */
 public class LobbyBalancer {
 
-    private final Set<String> lobbies;
-    private final Set<String> startedLobbies;
-
     public LobbyBalancer() {
-        this.lobbies = new HashSet<>();
-        this.startedLobbies = new HashSet<>();
-
-        final HyggEventBus eventBus = HyriAPI.get().getHyggdrasilManager().getHyggdrasilAPI().getEventBus();
-
-        eventBus.subscribe(HyggServerUpdatedEvent.class, event -> this.onUpdate(event.getServer()));
-        eventBus.subscribe(HyggServerStoppedEvent.class, event -> this.onStop(event.getServer()));
-
-        this.startTasks();
-    }
-
-    private void startTasks() {
         System.out.println("Starting lobby balancing tasks...");
 
         final IHyriScheduler scheduler = HyriAPI.get().getScheduler();
 
-        HyriAPI.get().getRedisProcessor().process(jedis -> {
-            for (String lobby : jedis.zrange(LobbyAPI.REDIS_KEY, 0, -1)) {
-                jedis.zrem(LobbyAPI.REDIS_KEY, lobby);
-            }
-        });
-
         scheduler.schedule(() -> HyriAPI.get().getRedisProcessor().process(jedis -> {
-            for (String lobby : this.lobbies) {
-                final HyggServer server = HyriAPI.get().getServerManager().getServer(lobby);
-
-                jedis.zadd(LobbyAPI.REDIS_KEY, server.getPlayers().size(), lobby);
+            for (String lobby : jedis.zrange(ILobbyAPI.BALANCER_KEY, 0, -1)) { // Delete all lobbies from balancer (in case one is idling or stopping)
+                jedis.zrem(ILobbyAPI.BALANCER_KEY, lobby);
             }
-        }), 800, 800, TimeUnit.MILLISECONDS);
 
-        scheduler.schedule(this::process, 10 * 1000, 500, TimeUnit.MILLISECONDS);
-    }
-
-    public void onUpdate(HyggServer server) {
-        if (server.getType().equals(LobbyAPI.TYPE)) {
-            final String serverName = server.getName();
-
-            if (server.getState() == HyggServerState.READY) {
-                this.startedLobbies.remove(serverName);
-
-                this.lobbies.add(serverName);
-            } else {
-                this.removeLobby(server);
+            for (HyggServer lobby : this.getWorkingLobbies()) { // Only add working lobbies
+                jedis.zadd(ILobbyAPI.BALANCER_KEY, lobby.getPlayingPlayers().size(), lobby.getName());
             }
-        }
-    }
+        }), 1, 1, TimeUnit.SECONDS);
 
-    public void onStop(HyggServer server) {
-        if (server.getType().equals(LobbyAPI.TYPE)) {
-            this.removeLobby(server);
-        }
+        scheduler.schedule(this::process, 10, 10, TimeUnit.SECONDS);
     }
 
     private void process() {
-        final int lobbiesNumber = this.getLobbiesNumber();
-        final int neededLobbies = this.neededLobbies();
+        final List<HyggServer> lobbies = this.getWorkingLobbies();
+        final int players = this.getLobbyPlayers();
 
-        if (lobbiesNumber < neededLobbies) {
-            for (int i = neededLobbies - lobbiesNumber; i > 0; i--) {
+        if (lobbies.size() == 0) {
+            this.startLobby();
+            return;
+        }
+
+        final int currentLobbies = lobbies.size();
+        final int neededLobbies = (int) Math.ceil((double) players * 1.5 / ILobbyAPI.MAX_PLAYERS); // The "perfect" amount of lobbies needed
+
+        if (currentLobbies > neededLobbies) {
+            lobbies.sort(Comparator.comparingLong(HyggServer::getStartedTime)); // Compare server by their time started time: young servers are prioritized.
+
+            for (int i = 0; i < currentLobbies - neededLobbies; i++) {
+                final HyggServer lobby = lobbies.get(i);
+
+                this.evacuateLobby(lobby); // Evacuate the lobby
+
+                try { // Wait 1s for proxies to evacuate players
+                    Thread.sleep(1000L);
+                } catch (InterruptedException e) {
+                    throw new HyliosException(e);
+                }
+
+                HyriAPI.get().getRedisProcessor().process(jedis -> jedis.zrem(ILobbyAPI.BALANCER_KEY, lobby.getName())); // Remove lobby from balancer
+                HyriAPI.get().getServerManager().removeServer(lobby.getName(), null); // Kill server process
+            }
+        } else if (currentLobbies < neededLobbies) {
+            for (int i = 0; i < neededLobbies - currentLobbies; i++) {
                 this.startLobby();
             }
-        } else if (lobbiesNumber > neededLobbies) {
-            for (String serverName : this.lobbies) {
-                final HyggServer server = HyriAPI.get().getServerManager().getServer(serverName);
+        }
+    }
 
-                if (server.getState() != HyggServerState.READY) {
-                    continue;
-                }
+    private void evacuateLobby(HyggServer lobby) {
+        final List<HyggServer> lobbies = this.getWorkingLobbies();
+        final Queue<UUID> players = new LinkedBlockingQueue<>(lobby.getPlayers()); // Create a queue of players to evacuate
 
-                if (server.getPlayers().size() <= LobbyAPI.MIN_PLAYERS && this.lobbies.size() > 1) {
-                    final String bestLobby = Hylios.get().getAPI().getLobbyAPI().getBestLobby();
+        lobbies.sort(Comparator.comparingInt(o -> o.getPlayers().size()));  // Sort lobbies by lower to greater amount of players
 
-                    if (bestLobby.equals(server.getName())) {
-                        return;
-                    }
+        for (HyggServer server : lobbies) {
+            if (server.getName().equals(lobby.getName())) {
+                continue;
+            }
 
-                    HyriAPI.get().getServerManager().evacuateServer(serverName, bestLobby);
-                    HyriAPI.get().getServerManager().removeServer(serverName, null);
+            for (int i = 0; i < server.getSlots() - server.getPlayers().size(); i++) { // For-each the available slots of the lobby
+                if (players.size() == 0) { // No more players to evacuate
                     return;
                 }
+
+                final UUID player = players.poll(); // Remove a player from the queue (declared as evacuated)
+
+                HyriAPI.get().getServerManager().sendPlayerToServer(player, server.getName());
             }
         }
     }
 
     private void startLobby() {
-        final HyggData data = new HyggData();
+        final HyggServerCreationInfo request = new HyggServerCreationInfo(ILobbyAPI.TYPE)
+                .withAccessibility(HyggServer.Accessibility.PUBLIC)
+                .withProcess(HyggServer.Process.PERMANENT)
+                .withSlots(ILobbyAPI.MAX_PLAYERS);
 
-        data.add(HyggServer.MAP_KEY, Hylios.get().getAPI().getLobbyAPI().getCurrentMap());
-        data.add(HyggServer.SUB_TYPE_KEY, LobbyAPI.SUBTYPE);
-
-        final HyggServerRequest request = new HyggServerRequest()
-                .withServerData(data)
-                .withServerOptions(new HyggServerOptions())
-                .withServerType(LobbyAPI.TYPE)
-                .withGameType(LobbyAPI.SUBTYPE);
-
-        HyriAPI.get().getHyggdrasilManager().getHyggdrasilAPI().getServerRequester().createServer(request, server -> this.startedLobbies.add(server.getName()));
+        HyriAPI.get().getServerManager().createServer(request, null);
     }
 
-    private int neededLobbies() {
-        return this.lobbies.size() < 1 ? 1 : (int) Math.ceil((double) this.getPlayersOnLobbies() * 1.1 / LobbyAPI.MAX_PLAYERS);
+    private int getLobbyPlayers() {
+        return HyriAPI.get().getNetworkManager().getNetwork().getPlayerCounter().getCategory(ILobbyAPI.TYPE).getPlayers();
     }
 
-    public void removeLobby(HyggServer server) {
-        HyriAPI.get().getRedisProcessor().process(jedis -> jedis.zrem(LobbyAPI.REDIS_KEY, server.getName()));
-
-        this.lobbies.remove(server.getName());
-    }
-
-    private int getPlayersOnLobbies() {
-        int players = 0;
-
-        for (String serverName : this.lobbies) {
-            final HyggServer server = HyriAPI.get().getServerManager().getServer(serverName);
-
-            players += server.getPlayers().size();
-        }
-
-        return players;
-    }
-
-    private int getLobbiesNumber() {
-        return this.lobbies.size() + this.startedLobbies.size();
+    private List<HyggServer> getWorkingLobbies() {
+        return HyriAPI.get().getLobbyAPI().getLobbies()
+                .stream()
+                .filter(server -> server.getState() == HyggServer.State.READY)
+                .collect(Collectors.toList());
     }
 
 }
