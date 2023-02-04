@@ -6,6 +6,8 @@ import org.fusesource.jansi.Ansi;
 import java.io.*;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Path;
+import java.text.DateFormat;
+import java.text.SimpleDateFormat;
 import java.util.EnumMap;
 import java.util.Map;
 import java.util.concurrent.BlockingQueue;
@@ -29,12 +31,12 @@ public class ColoredLogger extends Logger {
             this.consoleReader.setExpandEvents(false);
 
             final FileHandler fileHandler = new FileHandler(file.toString());
-            fileHandler.setFormatter(new ConciseFormatter(this, false));
+            fileHandler.setFormatter(new ConciseFormatter(false));
             this.addHandler(fileHandler);
 
             final Writer consoleHandler = new Writer(consoleReader);
             consoleHandler.setLevel(Level.INFO);
-            consoleHandler.setFormatter(new ConciseFormatter(this, true));
+            consoleHandler.setFormatter(new ConciseFormatter(true));
             this.addHandler(consoleHandler);
 
         } catch (IOException e) {
@@ -85,11 +87,11 @@ public class ColoredLogger extends Logger {
 
     private static class ConciseFormatter extends Formatter {
 
-        private final Logger logger;
+        private final DateFormat date = new SimpleDateFormat("HH:mm:ss");
+
         private final boolean colored;
 
-        public ConciseFormatter(Logger logger, boolean colored) {
-            this.logger = logger;
+        public ConciseFormatter(boolean colored) {
             this.colored = colored;
         }
 
@@ -98,10 +100,7 @@ public class ColoredLogger extends Logger {
         public String format(LogRecord record) {
             final StringBuilder formatted = new StringBuilder();
 
-            formatted.append("[")
-                    .append(this.logger.getName())
-                    .append("] ")
-                    .append("[");
+            formatted.append("[").append(date.format(record.getMillis())).append("] [");
             this.appendLevel(formatted, record.getLevel());
             formatted.append("] ")
                     .append(this.formatMessage(record))

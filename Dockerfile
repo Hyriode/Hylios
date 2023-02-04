@@ -1,5 +1,5 @@
 # Build Application Jar
-FROM gradle:jdk16 AS build
+FROM gradle:7.6.0 AS build
 
 WORKDIR /usr/app/
 
@@ -16,14 +16,18 @@ RUN gradle shadowJar
 # Run Application
 FROM openjdk:18.0.1.1-jdk
 
-# Set working directory
-WORKDIR /usr/app/
-
-# Get all environments variables
-ENV MEMORY="1G"
+VOLUME ["/hylios"]
+WORKDIR /hylios
 
 # Copy previous builded Jar
 COPY --from=build /usr/app/build/libs/Hylios-all.jar /usr/app/Hylios.jar
+# Copy entrypoint script
+COPY --from=build /usr/app/docker-entrypoint.sh /usr/app/docker-entrypoint.sh
+
+# Add permission to file
+RUN chmod +x /usr/app/docker-entrypoint.sh
+
+STOPSIGNAL SIGTERM
 
 # Start application
-ENTRYPOINT java -Xmx${MEMORY} -jar Hylios.jar
+ENTRYPOINT ["sh", "/usr/app/docker-entrypoint.sh"]
