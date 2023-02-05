@@ -2,6 +2,7 @@ package fr.hyriode.hylios.balancing;
 
 import fr.hyriode.api.HyriAPI;
 import fr.hyriode.hyggdrasil.api.proxy.HyggProxy;
+import fr.hyriode.hylios.Hylios;
 
 import java.util.Collection;
 import java.util.Set;
@@ -14,34 +15,36 @@ import java.util.concurrent.TimeUnit;
 public class ProxyBalancer {
 
     public ProxyBalancer() {
-        HyriAPI.get().getScheduler().schedule(this::process, 10, 10, TimeUnit.SECONDS);
+        System.out.println("Starting proxies balancing tasks...");
+
+        HyriAPI.get().getScheduler().schedule(this::process, 5, 60, TimeUnit.SECONDS);
     }
 
     private void process() {
         final Set<HyggProxy> proxies = HyriAPI.get().getProxyManager().getProxies();
-
-        if (proxies.size() == 0) {
-            this.startProxy();
-            return;
-        }
+        final int currentProxies = proxies.size();
+        final int minProxies = Hylios.get().getConfig().minProxies();
 
         int players = 0;
         for (HyggProxy proxy : proxies) {
             players += proxy.getPlayers().size();
         }
 
-        final int currentProxies = proxies.size();
-        final int neededProxies = (int) (Math.ceil((double) players * 1.5 / HyggProxy.MAX_PLAYERS));
+        int neededProxies = (int) (Math.ceil((double) players * 1.5 / HyggProxy.MAX_PLAYERS));
+
+        if (neededProxies < minProxies) {
+            neededProxies = minProxies;
+        }
 
         if (neededProxies > currentProxies) {
             for (int i = 0; i < neededProxies - currentProxies; i++) {
-                this.startProxy();
+                this.startProxy(currentProxies);
             }
         }
     }
 
-    private void startProxy() {
-        HyriAPI.get().getProxyManager().createProxy(proxy -> System.out.println("Created '" + proxy.getName() + "'."));
+    private void startProxy(int currentProxies) {
+        HyriAPI.get().getProxyManager().createProxy(proxy -> System.out.println("Started '" + proxy.getName() + "' (current: " + currentProxies + ")."));
     }
 
 }

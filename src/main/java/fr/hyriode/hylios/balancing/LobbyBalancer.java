@@ -5,6 +5,7 @@ import fr.hyriode.api.scheduler.IHyriScheduler;
 import fr.hyriode.api.server.ILobbyAPI;
 import fr.hyriode.hyggdrasil.api.server.HyggServer;
 import fr.hyriode.hyggdrasil.api.server.HyggServerCreationInfo;
+import fr.hyriode.hylios.Hylios;
 import fr.hyriode.hylios.util.HyliosException;
 
 import java.util.*;
@@ -19,7 +20,7 @@ import java.util.stream.Collectors;
 public class LobbyBalancer {
 
     public LobbyBalancer() {
-        System.out.println("Starting lobby balancing tasks...");
+        System.out.println("Starting lobbies balancing tasks...");
 
         final IHyriScheduler scheduler = HyriAPI.get().getScheduler();
 
@@ -33,23 +34,23 @@ public class LobbyBalancer {
             }
         }), 1, 1, TimeUnit.SECONDS);
 
-        scheduler.schedule(this::process, 10, 10, TimeUnit.SECONDS);
+        scheduler.schedule(this::process, 5, 30, TimeUnit.SECONDS);
     }
 
     private void process() {
         final List<HyggServer> lobbies = this.getWorkingLobbies();
+        final int currentLobbies = lobbies.size();
         final int players = this.getLobbyPlayers();
+        final int minLobbies = Hylios.get().getConfig().minLobbies();
 
-        if (lobbies.size() == 0) {
-            this.startLobby();
-            return;
+        int neededLobbies = (int) Math.ceil((double) players * 1.5 / ILobbyAPI.MAX_PLAYERS); // The "perfect" amount of lobbies needed
+
+        if (neededLobbies < minLobbies) {
+            neededLobbies = minLobbies;
         }
 
-        final int currentLobbies = lobbies.size();
-        final int neededLobbies = (int) Math.ceil((double) players * 1.5 / ILobbyAPI.MAX_PLAYERS); // The "perfect" amount of lobbies needed
-
         if (currentLobbies > neededLobbies) {
-            lobbies.sort(Comparator.comparingLong(HyggServer::getStartedTime)); // Compare server by their time started time: young servers are prioritized.
+            lobbies.sort(Comparator.comparingLong(HyggServer::getStartedTime)); // Compare servers by their time started time: young servers are prioritized.
 
             for (int i = 0; i < currentLobbies - neededLobbies; i++) {
                 final HyggServer lobby = lobbies.get(i);
@@ -67,7 +68,7 @@ public class LobbyBalancer {
             }
         } else if (currentLobbies < neededLobbies) {
             for (int i = 0; i < neededLobbies - currentLobbies; i++) {
-                this.startLobby();
+                this.startLobby(currentLobbies);
             }
         }
     }
@@ -95,13 +96,13 @@ public class LobbyBalancer {
         }
     }
 
-    private void startLobby() {
+    private void startLobby(int currentLobbies) {
         final HyggServerCreationInfo request = new HyggServerCreationInfo(ILobbyAPI.TYPE)
                 .withAccessibility(HyggServer.Accessibility.PUBLIC)
                 .withProcess(HyggServer.Process.PERMANENT)
                 .withSlots(ILobbyAPI.MAX_PLAYERS);
 
-        HyriAPI.get().getServerManager().createServer(request, null);
+        HyriAPI.get().getServerManager().createServer(request, server -> System.out.println("Started '" + server.getName() + "' (current: " + (currentLobbies) + ")."));
     }
 
     private int getLobbyPlayers() {

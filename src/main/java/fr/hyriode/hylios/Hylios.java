@@ -2,6 +2,7 @@ package fr.hyriode.hylios;
 
 import fr.hyriode.api.impl.application.HyriAPIImpl;
 import fr.hyriode.api.impl.application.config.HyriAPIConfig;
+import fr.hyriode.hylios.balancing.LimboBalancer;
 import fr.hyriode.hylios.balancing.LobbyBalancer;
 import fr.hyriode.hylios.balancing.ProxyBalancer;
 import fr.hyriode.hylios.config.HyliosConfig;
@@ -34,6 +35,7 @@ public class Hylios {
 
     private LobbyBalancer lobbyBalancer;
     private ProxyBalancer proxyBalancer;
+    private LimboBalancer limboBalancer;
     private QueueManager queueManager;
     private HostManager hostManager;
     private WorldGenerationHandler generationHandler;
@@ -51,15 +53,16 @@ public class Hylios {
 
         this.config = HyliosConfig.load();
         this.hyriAPI = new HyriAPIImpl(new HyriAPIConfig.Builder()
-                .withRedisConfig(this.config.getRedisConfig())
-                .withMongoDBConfig(this.config.getMongoDBConfig())
+                .withRedisConfig(this.config.redisConfig())
+                .withMongoDBConfig(this.config.mongoDBConfig())
                 .withDevEnvironment(false)
                 .withHyggdrasil(true)
                 .build(), References.NAME);
-        this.hyreosAPI = new HyreosAPI(this.hyriAPI.getRedisConnection().clone().getPool());
+        this.hyreosAPI = new HyreosAPI(this.hyriAPI.getRedisConnection().getPool());
         this.hyreosAPI.start();
         this.lobbyBalancer = new LobbyBalancer();
         this.proxyBalancer = new ProxyBalancer();
+        this.limboBalancer = new LimboBalancer();
         this.queueManager = new QueueManager();
         this.hostManager = new HostManager();
         this.generationHandler = new WorldGenerationHandler();
@@ -107,6 +110,10 @@ public class Hylios {
 
     public ProxyBalancer getProxyBalancer() {
         return this.proxyBalancer;
+    }
+
+    public LimboBalancer getLimboBalancer() {
+        return this.limboBalancer;
     }
 
     public QueueManager getQueueManager() {
