@@ -13,15 +13,14 @@ jobs:
         uses: actions/checkout@v2
 
       - name: Build and tag image
-        run: docker build -t "ghcr.io/hyriode/hylios:prod" -f Dockerfile . --build-arg USERNAME=$GITHUB_ACTOR --build-arg TOKEN=$GITHUB_TOKEN
+        run: docker build -t "ghcr.io/hyriode/hylios:prod" -f Dockerfile . --build-arg GITHUB_USERNAME=$GITHUB_ACTOR --build-arg GITHUB_TOKEN=$GITHUB_TOKEN
         env:
-          GITHUB_USERNAME: ${{ github.actor }}
           GITHUB_TOKEN: ${{ secrets.TOKEN }}
 
       - name: Docker login
         run: docker login ghcr.io -u $GITHUB_ACTOR -p $GITHUB_TOKEN
         env:
-          GITHUB_USERNAME: ${{ github.actor }}
+
           GITHUB_TOKEN: ${{ secrets.TOKEN }}
         shell: bash
 
