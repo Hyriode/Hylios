@@ -20,7 +20,6 @@ jobs:
       - name: Docker login
         run: docker login ghcr.io -u $GITHUB_ACTOR -p $GITHUB_TOKEN
         env:
-
           GITHUB_TOKEN: ${{ secrets.TOKEN }}
         shell: bash
 

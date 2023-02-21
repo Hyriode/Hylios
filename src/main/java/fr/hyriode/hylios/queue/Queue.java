@@ -39,8 +39,8 @@ public class Queue {
 
     private Queue(HyriQueue handle) {
         this.handle = handle;
-        this.process = HyriAPI.get().getScheduler().schedule(this::process, 0, 500, TimeUnit.MILLISECONDS);
         this.groupsQueue = new PriorityBlockingQueue<>(100000, Comparator.comparingInt(this::calculatePriority));
+        this.process = HyriAPI.get().getScheduler().schedule(this::process, 0, 500, TimeUnit.MILLISECONDS);
     }
 
     public void disable() {
