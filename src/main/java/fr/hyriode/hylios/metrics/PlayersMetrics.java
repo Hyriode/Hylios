@@ -2,7 +2,7 @@ package fr.hyriode.hylios.metrics;
 
 import fr.hyriode.api.HyriAPI;
 import fr.hyriode.api.player.IHyriPlayer;
-import fr.hyriode.api.rank.type.HyriPlayerRankType;
+import fr.hyriode.api.rank.PlayerRank;
 import fr.hyriode.hylios.Hylios;
 import fr.hyriode.hyreos.api.metrics.HyreosMetric;
 import fr.hyriode.hyreos.api.metrics.HyreosMetricsManager;
@@ -47,21 +47,21 @@ public class PlayersMetrics {
             double experience = 0;
             int hyriPlus = 0;
 
-            final Map<HyriPlayerRankType, Integer> ranks = new HashMap<>();
+            final Map<PlayerRank, Integer> ranks = new HashMap<>();
 
             for (IHyriPlayer player : players) {
                 hyris += player.getHyris().getAmount();
                 experience += player.getNetworkLeveling().getExperience();
 
-                if (player.hasHyriPlus()) {
+                if (player.getHyriPlus().has()) {
                     hyriPlus++;
                 }
 
-                if (player.isPremium()) {
+                if (player.getAuth().isPremium()) {
                     premiumCount++;
                 }
 
-                final HyriPlayerRankType rank = player.getRank().getRealPlayerType();
+                final PlayerRank rank = player.getRank().getRealPlayerType();
 
                 ranks.put(rank, ranks.getOrDefault(rank, 0) + 1);
             }
@@ -73,7 +73,7 @@ public class PlayersMetrics {
             experienceMetric.addField("value", experience);
             hyriPlusMetric.addField("value", hyriPlus);
 
-            for (Map.Entry<HyriPlayerRankType, Integer> entry : ranks.entrySet()) {
+            for (Map.Entry<PlayerRank, Integer> entry : ranks.entrySet()) {
                 ranksMetric.addField(entry.getKey().name(), entry.getValue());
             }
 

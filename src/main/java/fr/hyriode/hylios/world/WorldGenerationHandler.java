@@ -1,6 +1,7 @@
 package fr.hyriode.hylios.world;
 
 import fr.hyriode.api.HyriAPI;
+import fr.hyriode.api.world.IHyriWorld;
 import fr.hyriode.api.world.generation.IWorldGenerationAPI;
 import fr.hyriode.api.world.generation.WorldGenerationData;
 import fr.hyriode.api.world.generation.WorldGenerationType;
@@ -25,7 +26,7 @@ public class WorldGenerationHandler {
 
     private void process() {
         for (WorldGenerationType type : WorldGenerationType.values()) {
-            final List<String> worlds = HyriAPI.get().getWorldGenerationAPI().getWorlds(type);
+            final List<IHyriWorld> worlds = HyriAPI.get().getWorldGenerationAPI().getWorlds(type);
 
             if (worlds.size() >= MIN_WORLDS) {
                 continue;
@@ -33,6 +34,8 @@ public class WorldGenerationHandler {
 
             final int neededWorlds = MIN_WORLDS - worlds.size();
             final int neededServers = (int) Math.ceil((double) neededWorlds / 5);
+
+            System.out.println("Starting " + neededServers + " generation servers (type: " + type + "; worlds: " + neededWorlds + ")...");
 
             int remainingWorlds = neededWorlds;
 
