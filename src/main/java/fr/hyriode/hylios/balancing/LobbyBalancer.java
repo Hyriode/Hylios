@@ -32,7 +32,7 @@ public class LobbyBalancer {
             for (HyggServer lobby : this.getWorkingLobbies()) { // Only add working lobbies
                 jedis.zadd(ILobbyAPI.BALANCER_KEY, lobby.getPlayingPlayers().size(), lobby.getName());
             }
-        }), 1, 1, TimeUnit.SECONDS);
+        }), 1, 500, TimeUnit.SECONDS);
 
         scheduler.schedule(this::process, 5, 30, TimeUnit.SECONDS);
     }

@@ -5,6 +5,8 @@ import fr.hyriode.api.host.HostData;
 import fr.hyriode.api.impl.common.queue.HyriQueue;
 import fr.hyriode.api.player.IHyriPlayer;
 import fr.hyriode.api.player.IHyriPlayerSession;
+import fr.hyriode.api.queue.event.PlayerJoinQueueEvent;
+import fr.hyriode.api.queue.event.PlayerLeaveQueueEvent;
 import fr.hyriode.api.queue.event.QueueDisabledEvent;
 import fr.hyriode.api.queue.event.QueueUpdatedEvent;
 import fr.hyriode.api.scheduler.IHyriTask;
@@ -34,7 +36,7 @@ public class Queue {
     }
 
     public Queue(String game, String gameType, String map) {
-        this(new HyriQueue(Type.SERVER, game, gameType, map, null));
+        this(new HyriQueue(Type.GAME, game, gameType, map, null));
     }
 
     private Queue(HyriQueue handle) {
@@ -79,13 +81,7 @@ public class Queue {
         final List<HyggServer> servers = this.getGameServers();
         final int totalPlayers = servers.stream().mapToInt(server -> server.getPlayingPlayers().size()).sum() + this.groupsQueue.stream().mapToInt(Set::size).sum(); // Playing players + players in queue
         final int slots = servers.stream().filter(server -> server.getState() == HyggServer.State.READY || server.getState() == HyggServer.State.PLAYING).findFirst().map(HyggServer::getSlots).orElse(-1);
-
-        if (slots == -1) {
-            this.disable();
-            return;
-        }
-
-        final int neededServers = (int) Math.ceil((double) totalPlayers * 1.5 / slots);
+        final int neededServers = slots == -1 ? 1 : (int) Math.ceil((double) totalPlayers * 1.5 / slots);
         final int currentServers = servers.size();
 
         if (neededServers > currentServers) { // Not enough servers started
@@ -98,6 +94,12 @@ public class Queue {
                         .withSlots(slots);
 
                 HyriAPI.get().getServerManager().createServer(serverInfo, null); // Create a new server
+            }
+
+            try {
+                Thread.sleep(2000);
+            } catch (InterruptedException e) {
+                throw new RuntimeException(e);
             }
         }
 
@@ -247,11 +249,15 @@ public class Queue {
 
         this.handle.addPlayer(player);
 
+        HyriAPI.get().getNetworkManager().getEventBus().publish(new PlayerJoinQueueEvent(this.handle, player));
+
         this.updateInfo();
     }
 
     public void removePlayer(UUID player) {
         this.handle.removePlayer(player);
+
+        HyriAPI.get().getNetworkManager().getEventBus().publish(new PlayerLeaveQueueEvent(this.handle, player));
 
         this.updateInfo();
 
