@@ -32,7 +32,7 @@ public class LobbyBalancer {
             for (HyggServer lobby : this.getWorkingLobbies()) { // Only add working lobbies
                 jedis.zadd(ILobbyAPI.BALANCER_KEY, lobby.getPlayingPlayers().size(), lobby.getName());
             }
-        }), 1, 500, TimeUnit.SECONDS);
+        }), 1000, 500, TimeUnit.MILLISECONDS);
 
         scheduler.schedule(this::process, 5, 30, TimeUnit.SECONDS);
     }
@@ -50,7 +50,7 @@ public class LobbyBalancer {
         }
 
         if (currentLobbies > neededLobbies) {
-            lobbies.sort(Comparator.comparingLong(HyggServer::getStartedTime)); // Compare servers by their time started time: young servers are prioritized.
+            lobbies.sort(Comparator.comparingLong(HyggServer::getStartedTime).reversed()); // Compare servers by their time started time: young servers are prioritized.
 
             for (int i = 0; i < currentLobbies - neededLobbies; i++) {
                 final HyggServer lobby = lobbies.get(i);

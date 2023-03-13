@@ -17,7 +17,7 @@ public class ProxyBalancer {
     public ProxyBalancer() {
         System.out.println("Starting proxies balancing tasks...");
 
-        HyriAPI.get().getScheduler().schedule(this::process, 5, 60, TimeUnit.SECONDS);
+        HyriAPI.get().getScheduler().schedule(this::process, 5, 30, TimeUnit.SECONDS);
     }
 
     private void process() {
