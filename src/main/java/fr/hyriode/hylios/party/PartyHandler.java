@@ -69,7 +69,7 @@ public class PartyHandler {
             }
 
             this.disconnections.remove(player);
-        }, 5, TimeUnit.SECONDS)));
+        }, 5, TimeUnit.MINUTES)));
     }
 
     private record DisconnectionData(UUID party, IHyriTask task) {}

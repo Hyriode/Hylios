@@ -1,7 +1,13 @@
 package fr.hyriode.hylios.host;
 
+import fr.hyriode.api.HyriAPI;
 import fr.hyriode.api.event.HyriEventHandler;
+import fr.hyriode.api.host.HostData;
+import fr.hyriode.api.player.event.PlayerQuitNetworkEvent;
 import fr.hyriode.api.player.event.PlayerQuitServerEvent;
+import fr.hyriode.hyggdrasil.api.server.HyggServer;
+
+import java.util.UUID;
 
 /**
  * Created by AstFaster
@@ -17,7 +23,23 @@ public class HostListener {
 
     @HyriEventHandler
     public void onQuit(PlayerQuitServerEvent event) {
-        this.hostManager.removePlayerHost(event.getPlayerId());
+        final HyggServer server = HyriAPI.get().getServerManager().getServer(event.getServerName());
+
+        if (server == null) {
+            return;
+        }
+
+        final HostData hostData = HyriAPI.get().getHostManager().getHostData(server);
+
+        if (hostData == null) {
+            return;
+        }
+
+        final UUID playerId = event.getPlayerId();
+
+        if (hostData.getOwner().equals(playerId)) {
+            this.hostManager.removePlayerHost(server);
+        }
     }
 
 }

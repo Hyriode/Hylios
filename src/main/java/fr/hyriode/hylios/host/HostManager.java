@@ -4,6 +4,7 @@ import fr.hyriode.api.HyriAPI;
 import fr.hyriode.api.host.HostData;
 import fr.hyriode.api.host.HostRequest;
 import fr.hyriode.api.host.IHostManager;
+import fr.hyriode.api.impl.common.server.LobbyAPI;
 import fr.hyriode.hyggdrasil.api.event.HyggEventBus;
 import fr.hyriode.hyggdrasil.api.event.model.server.HyggServerUpdatedEvent;
 import fr.hyriode.hyggdrasil.api.protocol.data.HyggData;
@@ -13,6 +14,7 @@ import fr.hyriode.hyggdrasil.api.server.HyggServerCreationInfo;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.UUID;
+import java.util.concurrent.TimeUnit;
 
 /**
  * Created by AstFaster
@@ -53,7 +55,13 @@ public class HostManager {
                 return;
             }
 
-            HyriAPI.get().getServerManager().sendPlayerToServer(owner, serverName);
+            final long lifeTime = System.currentTimeMillis() - server.getStartedTime();
+
+            if (lifeTime < 10 * 1000L) {
+                HyriAPI.get().getScheduler().schedule(() -> HyriAPI.get().getServerManager().sendPlayerToServer(owner, serverName), 10 * 1000L - lifeTime, TimeUnit.MILLISECONDS);
+            } else {
+                HyriAPI.get().getServerManager().sendPlayerToServer(owner, serverName);
+            }
         }
     }
 
@@ -74,36 +82,15 @@ public class HostManager {
         HyriAPI.get().getServerManager().createServer(serverRequest, server -> this.startedServers.add(server.getName()));
     }
 
-    public void removePlayerHost(UUID playerId) {
-        final HyggServer server = this.getPlayerHost(playerId);
-
-        if (server == null) {
-            return;
-        }
-
+    public void removePlayerHost(HyggServer server) {
         final HyggServer.State state = server.getState();
 
         if (state == HyggServer.State.CREATING || state == HyggServer.State.STARTING || state == HyggServer.State.READY) {
             final String serverName = server.getName();
 
-            HyriAPI.get().getLobbyAPI().evacuateToLobby(serverName);
-            HyriAPI.get().getServerManager().removeServer(serverName, null);
+            HyriAPI.get().getScheduler().schedule(() ->  HyriAPI.get().getLobbyAPI().evacuateToLobby(serverName), 1, TimeUnit.SECONDS);
+            HyriAPI.get().getScheduler().schedule(() -> HyriAPI.get().getServerManager().removeServer(serverName, null), 5, TimeUnit.SECONDS);
         }
-    }
-
-    private HyggServer getPlayerHost(UUID playerId) {
-        for (HyggServer server : HyriAPI.get().getServerManager().getServers()) {
-            final HostData hostData = this.api.getHostData(server);
-
-            if (hostData == null) {
-                continue;
-            }
-
-            if (hostData.getOwner().equals(playerId)) {
-                return server;
-            }
-        }
-        return null;
     }
 
 }

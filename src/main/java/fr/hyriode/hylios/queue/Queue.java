@@ -14,9 +14,11 @@ import fr.hyriode.hyggdrasil.api.server.HyggServer;
 import fr.hyriode.hyggdrasil.api.server.HyggServerCreationInfo;
 import fr.hyriode.hylios.Hylios;
 
+import java.net.InetSocketAddress;
 import java.util.*;
 import java.util.concurrent.PriorityBlockingQueue;
 import java.util.concurrent.TimeUnit;
+import java.util.stream.Collectors;
 
 import static fr.hyriode.api.queue.IHyriQueue.Type;
 
@@ -28,7 +30,9 @@ public class Queue {
 
     private final PriorityBlockingQueue<Set<UUID>> groupsQueue;
 
-    private final IHyriTask process;
+    private final IHyriTask playersProcess;
+    private IHyriTask startingProcess;
+
     private final HyriQueue handle;
 
     public Queue(String server) {
@@ -42,11 +46,19 @@ public class Queue {
     private Queue(HyriQueue handle) {
         this.handle = handle;
         this.groupsQueue = new PriorityBlockingQueue<>(100000, Comparator.comparingInt(this::calculatePriority));
-        this.process = HyriAPI.get().getScheduler().schedule(this::process, 0, 500, TimeUnit.MILLISECONDS);
+        this.playersProcess = HyriAPI.get().getScheduler().schedule(this::processPlayers, 0, 500, TimeUnit.MILLISECONDS);
+
+        if (this.handle.getType() == Type.GAME) {
+            this.startingProcess = HyriAPI.get().getScheduler().schedule(this::processServersStarting, 0, 2, TimeUnit.SECONDS);
+        }
     }
 
     public void disable() {
-        this.process.cancel();
+        this.playersProcess.cancel();
+
+        if (this.startingProcess != null) {
+            this.startingProcess.cancel();
+        }
 
         for (UUID player : this.handle.getPlayers()) {
             final IHyriPlayerSession session = IHyriPlayerSession.get(player);
@@ -64,7 +76,7 @@ public class Queue {
         HyriAPI.get().getScheduler().schedule(() -> HyriAPI.get().getQueueManager().deleteQueue(this.handle.getId()), 10, TimeUnit.SECONDS);
     }
 
-    private void process() {
+    private void processPlayers() {
         this.groupsQueue.addAll(this.handle.getTotalPlayers());
 
         if (this.handle.getType() == Type.GAME) {
@@ -77,12 +89,11 @@ public class Queue {
     }
 
     private void processGame() {
-        final List<HyggServer> servers = this.getGameServers();
-        final List<HyggServer> availableServers = new ArrayList<>(servers.stream()
+        final List<HyggServer> availableServers = new ArrayList<>(this.getGameServers().stream()
                 .filter(server -> server.getState() == HyggServer.State.READY)
                 .filter(server -> server.getPlayingPlayers().size() < server.getSlots())
-                .filter(server -> System.currentTimeMillis() - server.getStartedTime() >= 10 * 1000L) // Hostname must be known by proxies (security)
-                .sorted(Comparator.comparingInt(server -> server.getPlayingPlayers().size())) // Sort servers by the highest amount of players
+                .filter(server -> System.currentTimeMillis() - server.getStartedTime() > 15 * 1000L)
+                .sorted((o1, o2) -> o2.getPlayingPlayers().size() - o1.getPlayingPlayers().size()) // Sort servers by the highest amount of players
                 .toList()); // Get servers that players could join
 
         final Map<String, Integer> players = new HashMap<>(); // Create a copy of players (for synchronisation)
@@ -98,9 +109,9 @@ public class Queue {
 
                 if (serverPlayers + group.size() <= server.getSlots()) { // Check if the server can handle all the players in the group
                     for (UUID player : group) { // Teleport each player
-                        this.removePlayer(player);
-
                         HyriAPI.get().getServerManager().sendPlayerToServer(player, serverName);
+
+                        this.removePlayer(player, false);
                     }
 
                     players.put(serverName, serverPlayers + group.size()); // Add teleported players in the copy
@@ -108,14 +119,21 @@ public class Queue {
                 }
             }
         }
+    }
 
+    private void processServersStarting() {
+        final List<HyggServer> servers = this.getGameServers();
+        final List<HyggServer> potentialServers = servers.stream().filter(server -> server.getState() != HyggServer.State.PLAYING).toList();
         final int totalPlayers = servers.stream().mapToInt(server -> server.getPlayingPlayers().size()).sum() + this.groupsQueue.stream().mapToInt(Set::size).sum(); // Playing players + players in queue
-        final int slots = servers.stream().filter(server -> server.getState() == HyggServer.State.READY || server.getState() == HyggServer.State.PLAYING).findFirst().map(HyggServer::getSlots).orElse(-1);
+        final int slots = servers.stream()
+                .filter(server -> server.getSlots() != -1)
+                .findFirst()
+                .map(HyggServer::getSlots)
+                .orElse(-1);
         final int neededServers = slots == -1 ? 1 : (int) Math.ceil((double) totalPlayers * 1.5 / slots);
-        final int currentServers = servers.size();
 
-        if (neededServers > currentServers) { // Not enough servers started
-            for (int i = 0; i < neededServers - currentServers; i++) {
+        if (potentialServers.size() < neededServers) { // Not enough servers started
+            for (int i = 0; i < neededServers - potentialServers.size(); i++) {
                 final HyggServerCreationInfo serverInfo = new HyggServerCreationInfo(this.handle.getGame())
                         .withGameType(this.handle.getGameType())
                         .withMap(this.handle.getMap())
@@ -124,12 +142,6 @@ public class Queue {
                         .withSlots(slots);
 
                 HyriAPI.get().getServerManager().createServer(serverInfo, null); // Create a new server
-            }
-
-            try {
-                Thread.sleep(2000);
-            } catch (InterruptedException e) {
-                throw new RuntimeException(e);
             }
         }
     }
@@ -162,13 +174,13 @@ public class Queue {
                             return;
                         }
 
-                        if (!hostData.getWhitelistedPlayers().contains(player)) { // Check if the player is whitelisted
+                        if (!hostData.getWhitelistedPlayers().contains(player) && !hostData.getSecondaryHosts().contains(player)) { // Check if the player is whitelisted
                             continue;
                         }
 
-                        this.removePlayer(player);
-
                         HyriAPI.get().getServerManager().sendPlayerToServer(player, server.getName());
+
+                        this.removePlayer(player, false);
                         players++;
                     }
                 }
@@ -177,12 +189,12 @@ public class Queue {
         }
 
         for (Set<UUID> group : this.groupsQueue) {
-            if (players + group.size() >= server.getSlots()) { // Check if the server is full
+            if (players + group.size() > server.getSlots()) { // Check if the server is full
                 return;
             }
 
             for (UUID player : group) {
-                this.removePlayer(player);
+                this.removePlayer(player, false);
 
                 HyriAPI.get().getServerManager().sendPlayerToServer(player, server.getName());
                 players++;
@@ -213,6 +225,16 @@ public class Queue {
 
         for (HyggServer server : HyriAPI.get().getServerManager().getServers()) {
             if (server.getType().equals(this.handle.getGame()) && Objects.equals(server.getGameType(), this.handle.getGameType()) && (this.handle.getMap() == null || Objects.equals(server.getMap(), this.handle.getMap()))) {
+                final HyggServer.State state = server.getState();
+
+                if (state == HyggServer.State.SHUTDOWN || state == HyggServer.State.IDLE) {
+                    continue;
+                }
+
+                if (server.getAccessibility() != HyggServer.Accessibility.PUBLIC) {
+                    continue;
+                }
+
                 servers.add(server);
             }
         }
@@ -233,15 +255,17 @@ public class Queue {
 
         this.handle.addPlayer(player);
 
-        HyriAPI.get().getNetworkManager().getEventBus().publish(new PlayerJoinQueueEvent(this.handle, player));
-
         this.updateInfo();
+
+        HyriAPI.get().getNetworkManager().getEventBus().publish(new PlayerJoinQueueEvent(this.handle, player));
     }
 
-    public void removePlayer(UUID player) {
+    public void removePlayer(UUID player, boolean event) {
         this.handle.removePlayer(player);
 
-        HyriAPI.get().getNetworkManager().getEventBus().publish(new PlayerLeaveQueueEvent(this.handle, player));
+        if (event) {
+            HyriAPI.get().getNetworkManager().getEventBus().publish(new PlayerLeaveQueueEvent(this.handle, player));
+        }
 
         this.updateInfo();
 
@@ -250,10 +274,6 @@ public class Queue {
         if (session != null) {
             session.setQueue(null);
             session.update();
-        }
-
-        if (this.handle.getPlayers().size() == 0) {
-            this.disable();
         }
     }
 

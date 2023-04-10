@@ -25,6 +25,11 @@ public class QueueManager {
         this.queues = ConcurrentHashMap.newKeySet();
 
         HyriAPI.get().getPubSub().subscribe(HyriChannel.QUEUES, new QueueReceiver(this));
+
+        // Delete old queues
+        for (IHyriQueue queue : HyriAPI.get().getQueueManager().getQueues()) {
+            HyriAPI.get().getQueueManager().deleteQueue(queue.getId());
+        }
     }
 
     public void disable() {
@@ -43,7 +48,7 @@ public class QueueManager {
         final Queue playerQueue = this.getPlayerQueue(player);
 
         if (playerQueue != null) {
-            playerQueue.removePlayer(player);
+            playerQueue.removePlayer(player, false);
         }
 
         if (type == Type.GAME) {
@@ -81,7 +86,7 @@ public class QueueManager {
             return;
         }
 
-        playerQueue.removePlayer(player);
+        playerQueue.removePlayer(player, true);
     }
 
     private Queue getPlayerQueue(UUID playerId) {
