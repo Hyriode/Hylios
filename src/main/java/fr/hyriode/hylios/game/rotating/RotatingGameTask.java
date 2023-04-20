@@ -1,10 +1,15 @@
 package fr.hyriode.hylios.game.rotating;
 
 import fr.hyriode.api.HyriAPI;
+import fr.hyriode.api.game.IHyriGameInfo;
+import fr.hyriode.api.game.IHyriGameType;
 import fr.hyriode.api.game.rotating.IHyriRotatingGame;
 import fr.hyriode.api.game.rotating.IHyriRotatingGameManager;
+import fr.hyriode.api.impl.common.game.HyriGameType;
+import fr.hyriode.api.leveling.NetworkLeveling;
 import fr.hyriode.api.server.IHyriServerManager;
 import fr.hyriode.hyggdrasil.api.server.HyggServer;
+import fr.hyriode.hylios.Hylios;
 
 import java.util.concurrent.TimeUnit;
 
@@ -37,9 +42,11 @@ public class RotatingGameTask {
 
         gameManager.switchToNextRotatingGame();
 
+        final IHyriGameInfo gameInfo = game.getInfo();
         final IHyriServerManager serverManager = HyriAPI.get().getServerManager();
 
-        for (HyggServer server : serverManager.getServers(game.getInfo().getName())) {
+        // Remove started servers (except playing ones)
+        for (HyggServer server : serverManager.getServers(gameInfo.getName())) {
             final HyggServer.State state = server.getState();
 
             if (state == HyggServer.State.PLAYING || state == HyggServer.State.SHUTDOWN) {
@@ -55,6 +62,14 @@ public class RotatingGameTask {
 
             serverManager.removeServer(serverName, null);
         }
+
+        // Disable active queues
+        for (IHyriGameType gameType : gameInfo.getTypes()) {
+            Hylios.get().getQueueManager().getGameQueue(gameInfo.getName(), gameType.getName(), null).disable();
+        }
+
+        // Reset leaderboards
+        HyriAPI.get().getLeaderboardProvider().getLeaderboard(NetworkLeveling.LEADERBOARD_TYPE, "rotating-game-experience").clear();
 
         this.start();
     }

@@ -5,6 +5,7 @@ import fr.hyriode.api.impl.application.config.HyriAPIConfig;
 import fr.hyriode.hylios.balancing.LimboBalancer;
 import fr.hyriode.hylios.balancing.LobbyBalancer;
 import fr.hyriode.hylios.balancing.ProxyBalancer;
+import fr.hyriode.hylios.booster.BoosterHandler;
 import fr.hyriode.hylios.config.HyliosConfig;
 import fr.hyriode.hylios.game.rotating.RotatingGameTask;
 import fr.hyriode.hylios.host.HostManager;
@@ -40,6 +41,7 @@ public class Hylios {
     private HostManager hostManager;
     private WorldGenerationHandler generationHandler;
     private PartyHandler partyHandler;
+    private BoosterHandler boosterHandler;
 
     public void start() {
         instance = this;
@@ -67,6 +69,7 @@ public class Hylios {
         this.hostManager = new HostManager();
         this.generationHandler = new WorldGenerationHandler();
         this.partyHandler = new PartyHandler();
+        this.boosterHandler = new BoosterHandler();
 
         new LiveCounterMetrics().start();
         new PlayersMetrics().start();
@@ -128,8 +131,12 @@ public class Hylios {
         return this.generationHandler;
     }
 
-    public PartyHandler getPlayerHandler() {
+    public PartyHandler getPartyHandler() {
         return this.partyHandler;
+    }
+
+    public BoosterHandler getBoosterHandler() {
+        return this.boosterHandler;
     }
 
 }

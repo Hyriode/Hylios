@@ -2,7 +2,9 @@ package fr.hyriode.hylios.queue;
 
 import fr.hyriode.api.HyriAPI;
 import fr.hyriode.api.packet.HyriChannel;
+import fr.hyriode.api.player.IHyriPlayerSession;
 import fr.hyriode.api.queue.IHyriQueue;
+import fr.hyriode.api.queue.event.QueueDisabledEvent;
 import fr.hyriode.api.queue.packet.JoinQueuePacket;
 import fr.hyriode.api.queue.packet.LeaveQueuePacket;
 
@@ -28,6 +30,18 @@ public class QueueManager {
 
         // Delete old queues
         for (IHyriQueue queue : HyriAPI.get().getQueueManager().getQueues()) {
+            for (UUID player : queue.getPlayers()) {
+                final IHyriPlayerSession session = IHyriPlayerSession.get(player);
+
+                if (session == null) {
+                    continue;
+                }
+
+                session.setQueue(null);
+                session.update();
+            }
+
+            HyriAPI.get().getNetworkManager().getEventBus().publish(new QueueDisabledEvent(queue));
             HyriAPI.get().getQueueManager().deleteQueue(queue.getId());
         }
     }
@@ -109,7 +123,7 @@ public class QueueManager {
         return null;
     }
 
-    private Queue getGameQueue(String game, String gameType, String map) {
+    public Queue getGameQueue(String game, String gameType, String map) {
         for (Queue queue : this.queues) {
             final IHyriQueue handle = queue.getHandle();
 

@@ -5,6 +5,7 @@ import fr.hyriode.api.host.HostData;
 import fr.hyriode.api.host.HostRequest;
 import fr.hyriode.api.host.IHostManager;
 import fr.hyriode.api.impl.common.server.LobbyAPI;
+import fr.hyriode.api.player.IHyriPlayerSession;
 import fr.hyriode.hyggdrasil.api.event.HyggEventBus;
 import fr.hyriode.hyggdrasil.api.event.model.server.HyggServerUpdatedEvent;
 import fr.hyriode.hyggdrasil.api.protocol.data.HyggData;
@@ -49,8 +50,9 @@ public class HostManager {
             }
 
             final UUID owner = hostData.getOwner();
+            final IHyriPlayerSession session = IHyriPlayerSession.get(owner);
 
-            if (!HyriAPI.get().getPlayerManager().isOnline(owner)) {
+            if (session == null || session.isModerating()) {
                 HyriAPI.get().getServerManager().removeServer(serverName, null);
                 return;
             }
@@ -58,7 +60,7 @@ public class HostManager {
             final long lifeTime = System.currentTimeMillis() - server.getStartedTime();
 
             if (lifeTime < 10 * 1000L) {
-                HyriAPI.get().getScheduler().schedule(() -> HyriAPI.get().getServerManager().sendPlayerToServer(owner, serverName), 10 * 1000L - lifeTime, TimeUnit.MILLISECONDS);
+                HyriAPI.get().getScheduler().schedule(() -> HyriAPI.get().getServerManager().sendPlayerToServer(owner, serverName), 15 * 1000L - lifeTime, TimeUnit.MILLISECONDS);
             } else {
                 HyriAPI.get().getServerManager().sendPlayerToServer(owner, serverName);
             }
