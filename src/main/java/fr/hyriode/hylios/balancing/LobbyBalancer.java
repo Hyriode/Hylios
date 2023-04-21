@@ -55,7 +55,9 @@ public class LobbyBalancer {
 
                 final Queue<HyggServer> lobbies = new ArrayDeque<>(this.getWorkingLobbies());
 
-                this.restartLobby(lobbies.poll(), lobbies);
+                if (lobbies.size() > 0)  {
+                    this.restartLobby(lobbies.poll(), lobbies);
+                }
             }
         });
     }

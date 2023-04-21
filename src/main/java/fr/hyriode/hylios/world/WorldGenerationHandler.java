@@ -18,13 +18,17 @@ import java.util.concurrent.TimeUnit;
  */
 public class WorldGenerationHandler {
 
-    public static final int MIN_WORLDS = 50;
+    public static final int MIN_WORLDS = 500;
 
     public WorldGenerationHandler() {
-        HyriAPI.get().getScheduler().schedule(this::process, 0, 30, TimeUnit.MINUTES);
+        HyriAPI.get().getScheduler().schedule(this::process, 0, 60, TimeUnit.MINUTES);
     }
 
     private void process() {
+        if (HyriAPI.get().getNetworkManager().getNetwork().getPlayerCounter().getPlayers() > 50) {
+            return;
+        }
+
         for (WorldGenerationType type : WorldGenerationType.values()) {
             final List<IHyriWorld> worlds = HyriAPI.get().getWorldGenerationAPI().getWorlds(type);
 
@@ -33,7 +37,7 @@ public class WorldGenerationHandler {
             }
 
             final int neededWorlds = MIN_WORLDS - worlds.size();
-            final int neededServers = (int) Math.ceil((double) neededWorlds / 5);
+            final int neededServers = (int) Math.ceil((double) neededWorlds / 15);
 
             System.out.println("Starting " + neededServers + " generation servers (type: " + type + "; worlds: " + neededWorlds + ")...");
 
@@ -42,7 +46,7 @@ public class WorldGenerationHandler {
             for (int i = 0; i < neededServers; i++) {
                 final HyggData data = new HyggData();
 
-                data.add(IWorldGenerationAPI.DATA_KEY, HyriAPI.GSON.toJson(new WorldGenerationData(type, Math.min(remainingWorlds, 5))));
+                data.add(IWorldGenerationAPI.DATA_KEY, HyriAPI.GSON.toJson(new WorldGenerationData(type, Math.min(remainingWorlds, 15))));
 
                 final HyggServerCreationInfo request = new HyggServerCreationInfo(IWorldGenerationAPI.SERVERS_TYPE)
                         .withAccessibility(HyggServer.Accessibility.PUBLIC)
@@ -51,7 +55,7 @@ public class WorldGenerationHandler {
 
                 HyriAPI.get().getServerManager().createServer(request, null);
 
-                remainingWorlds -= 5;
+                remainingWorlds -= 15;
             }
         }
     }

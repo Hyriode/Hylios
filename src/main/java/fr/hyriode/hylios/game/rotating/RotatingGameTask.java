@@ -5,12 +5,13 @@ import fr.hyriode.api.game.IHyriGameInfo;
 import fr.hyriode.api.game.IHyriGameType;
 import fr.hyriode.api.game.rotating.IHyriRotatingGame;
 import fr.hyriode.api.game.rotating.IHyriRotatingGameManager;
-import fr.hyriode.api.impl.common.game.HyriGameType;
 import fr.hyriode.api.leveling.NetworkLeveling;
 import fr.hyriode.api.server.IHyriServerManager;
 import fr.hyriode.hyggdrasil.api.server.HyggServer;
 import fr.hyriode.hylios.Hylios;
 
+import java.util.Calendar;
+import java.util.TimeZone;
 import java.util.concurrent.TimeUnit;
 
 /**
@@ -18,8 +19,6 @@ import java.util.concurrent.TimeUnit;
  * on 27/07/2022 at 18:46
  */
 public class RotatingGameTask {
-
-    private static final int MAX_GAME_TIME = 3600 * 24 * 7 * 1000;
 
     public void start() {
         final IHyriRotatingGameManager gameManager = HyriAPI.get().getGameManager().getRotatingGameManager();
@@ -29,7 +28,20 @@ public class RotatingGameTask {
             return;
         }
 
-        HyriAPI.get().getScheduler().schedule(this::process, MAX_GAME_TIME - (System.currentTimeMillis() - game.sinceWhen()), TimeUnit.MILLISECONDS);
+        final Calendar calendar = Calendar.getInstance();
+
+        calendar.setTimeZone(TimeZone.getTimeZone("Europe/Paris"));
+        calendar.set(Calendar.DAY_OF_WEEK, 0);
+        calendar.set(Calendar.HOUR_OF_DAY, 16);
+        calendar.set(Calendar.MINUTE, 0);
+        calendar.set(Calendar.SECOND, 0);
+        calendar.set(Calendar.MILLISECOND, 0);
+
+        if (calendar.getTimeInMillis() < System.currentTimeMillis()) {
+            calendar.set(Calendar.WEEK_OF_MONTH, calendar.get(Calendar.WEEK_OF_MONTH) + 1);
+        }
+
+        HyriAPI.get().getScheduler().schedule(this::process, calendar.getTimeInMillis() - System.currentTimeMillis(), TimeUnit.MILLISECONDS);
     }
 
     public void process() {
@@ -39,6 +51,8 @@ public class RotatingGameTask {
         if (game == null) {
             return;
         }
+
+        System.out.println("Switching to next rotating game...");
 
         gameManager.switchToNextRotatingGame();
 
@@ -60,7 +74,7 @@ public class RotatingGameTask {
                 HyriAPI.get().getLobbyAPI().evacuateToLobby(serverName);
             }
 
-            serverManager.removeServer(serverName, null);
+            HyriAPI.get().getScheduler().schedule(() -> serverManager.removeServer(serverName, null), 5, TimeUnit.SECONDS);
         }
 
         // Disable active queues
