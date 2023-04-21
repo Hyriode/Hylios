@@ -18,7 +18,7 @@ import java.util.concurrent.TimeUnit;
  */
 public class WorldGenerationHandler {
 
-    public static final int MIN_WORLDS = 500;
+    public static final int MIN_WORLDS = 100;
 
     public WorldGenerationHandler() {
         HyriAPI.get().getScheduler().schedule(this::process, 0, 60, TimeUnit.MINUTES);
