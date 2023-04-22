@@ -37,7 +37,7 @@ public class WorldGenerationHandler {
             }
 
             final int neededWorlds = MIN_WORLDS - worlds.size();
-            final int neededServers = (int) Math.ceil((double) neededWorlds / 15);
+            final int neededServers = (int) Math.ceil((double) neededWorlds / 5);
 
             System.out.println("Starting " + neededServers + " generation servers (type: " + type + "; worlds: " + neededWorlds + ")...");
 
@@ -46,7 +46,7 @@ public class WorldGenerationHandler {
             for (int i = 0; i < neededServers; i++) {
                 final HyggData data = new HyggData();
 
-                data.add(IWorldGenerationAPI.DATA_KEY, HyriAPI.GSON.toJson(new WorldGenerationData(type, Math.min(remainingWorlds, 15))));
+                data.add(IWorldGenerationAPI.DATA_KEY, HyriAPI.GSON.toJson(new WorldGenerationData(type, Math.min(remainingWorlds, 5))));
 
                 final HyggServerCreationInfo request = new HyggServerCreationInfo(IWorldGenerationAPI.SERVERS_TYPE)
                         .withAccessibility(HyggServer.Accessibility.PUBLIC)
@@ -55,7 +55,7 @@ public class WorldGenerationHandler {
 
                 HyriAPI.get().getServerManager().createServer(request, null);
 
-                remainingWorlds -= 15;
+                remainingWorlds -= 5;
             }
         }
     }
