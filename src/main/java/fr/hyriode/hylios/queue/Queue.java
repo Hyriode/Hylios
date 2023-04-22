@@ -130,7 +130,7 @@ public class Queue {
                 .findFirst()
                 .map(HyggServer::getSlots)
                 .orElse(-1);
-        final int neededServers = slots == -1 ? 1 : (int) Math.ceil((double) totalPlayers * 1.5 / slots);
+        final int neededServers = slots == -1 ? 1 : (int) Math.ceil((double) totalPlayers * 1.2 / slots);
 
         if (potentialServers.size() < neededServers) { // Not enough servers started
             for (int i = 0; i < neededServers - potentialServers.size(); i++) {
