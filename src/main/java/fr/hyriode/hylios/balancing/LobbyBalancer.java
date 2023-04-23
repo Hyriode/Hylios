@@ -170,7 +170,7 @@ public class LobbyBalancer {
     }
 
     private int getLobbyPlayers() {
-        return HyriAPI.get().getNetworkManager().getNetwork().getPlayerCounter().getCategory(ILobbyAPI.TYPE).getPlayers();
+        return HyriAPI.get().getNetworkManager().getPlayerCounter().getCategory(ILobbyAPI.TYPE).getPlayers();
     }
 
     private List<HyggServer> getWorkingLobbies() {

@@ -44,7 +44,7 @@ public class LiveCounterMetrics {
     private void sendPlayersMetrics() {
         final HyreosMetric metric = new HyreosMetric("players");
 
-        metric.addField("value",  HyriAPI.get().getNetworkManager().getNetwork().getPlayerCounter().getPlayers());
+        metric.addField("value",  HyriAPI.get().getNetworkManager().getPlayerCounter().getPlayers());
 
         this.metricsManager.writeMetric(metric);
     }

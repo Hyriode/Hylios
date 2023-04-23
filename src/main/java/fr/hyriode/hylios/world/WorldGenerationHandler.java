@@ -25,7 +25,7 @@ public class WorldGenerationHandler {
     }
 
     private void process() {
-        if (HyriAPI.get().getNetworkManager().getNetwork().getPlayerCounter().getPlayers() > 50) {
+        if (HyriAPI.get().getNetworkManager().getPlayerCounter().getPlayers() > 50) {
             return;
         }
 
