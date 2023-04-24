@@ -184,7 +184,7 @@ public class Queue {
                         players++;
 
                         try {
-                            Thread.sleep(1000L);
+                            Thread.sleep(200L);
                         } catch (InterruptedException e) {
                             throw new RuntimeException(e);
                         }
@@ -206,7 +206,7 @@ public class Queue {
                 players++;
 
                 try {
-                    Thread.sleep(1000L);
+                    Thread.sleep(200L);
                 } catch (InterruptedException e) {
                     throw new RuntimeException(e);
                 }
