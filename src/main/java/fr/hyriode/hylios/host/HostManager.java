@@ -79,7 +79,9 @@ public class HostManager {
                 .withGameType(gameType)
                 .withAccessibility(HyggServer.Accessibility.HOST)
                 .withProcess(HyggServer.Process.TEMPORARY)
-                .withData(serverData);
+                .withData(serverData)
+                .withMaxMemory("2G")
+                .withCpus(1.5D);
 
         HyriAPI.get().getServerManager().createServer(serverRequest, server -> this.startedServers.add(server.getName()));
     }

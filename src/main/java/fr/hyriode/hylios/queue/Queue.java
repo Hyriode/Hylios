@@ -182,6 +182,12 @@ public class Queue {
 
                         this.removePlayer(player, false);
                         players++;
+
+                        try {
+                            Thread.sleep(1000L);
+                        } catch (InterruptedException e) {
+                            throw new RuntimeException(e);
+                        }
                     }
                 }
                 return;
@@ -198,6 +204,12 @@ public class Queue {
 
                 HyriAPI.get().getServerManager().sendPlayerToServer(player, server.getName());
                 players++;
+
+                try {
+                    Thread.sleep(1000L);
+                } catch (InterruptedException e) {
+                    throw new RuntimeException(e);
+                }
             }
         }
     }
