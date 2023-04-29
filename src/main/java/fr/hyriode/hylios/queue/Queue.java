@@ -111,7 +111,7 @@ public class Queue {
                     for (UUID player : group) { // Teleport each player
                         HyriAPI.get().getServerManager().sendPlayerToServer(player, serverName);
 
-                        this.removePlayer(player, false);
+                        this.removePlayer(player);
                     }
 
                     players.put(serverName, serverPlayers + group.size()); // Add teleported players in the copy
@@ -167,11 +167,17 @@ public class Queue {
                 return;
             }
 
+            final IHyriPlayer ownerAccount = IHyriPlayer.get(hostData.getOwner());
+
             if (hostData.isWhitelisted()) {
                 for (Set<UUID> group : this.groupsQueue) {
                     for (UUID player : group) {
                         if (players >= server.getSlots()) { // Check if the server is full
                             return;
+                        }
+
+                        if (ownerAccount.getHosts().hasBannedPlayer(player)) { // Check if the player is banned
+                            continue;
                         }
 
                         if (!hostData.getWhitelistedPlayers().contains(player) && !hostData.getSecondaryHosts().contains(player)) { // Check if the player is whitelisted
@@ -180,12 +186,42 @@ public class Queue {
 
                         HyriAPI.get().getServerManager().sendPlayerToServer(player, server.getName());
 
-                        this.removePlayer(player, false);
+                        this.removePlayer(player);
                         players++;
                     }
+
+                    try {
+                        Thread.sleep(1000L);
+                    } catch (InterruptedException e) {
+                        throw new RuntimeException(e);
+                    }
                 }
-                return;
+
+            } else {
+                for (Set<UUID> group : this.groupsQueue) {
+                    for (UUID player : group) {
+                        if (players >= server.getSlots()) { // Check if the server is full
+                            return;
+                        }
+
+                        if (ownerAccount.getHosts().hasBannedPlayer(player)) { // Check if the player is banned
+                            continue;
+                        }
+
+                        HyriAPI.get().getServerManager().sendPlayerToServer(player, server.getName());
+
+                        this.removePlayer(player);
+                        players++;
+                    }
+
+                    try {
+                        Thread.sleep(1000L);
+                    } catch (InterruptedException e) {
+                        throw new RuntimeException(e);
+                    }
+                }
             }
+            return;
         }
 
         for (Set<UUID> group : this.groupsQueue) {
@@ -194,10 +230,16 @@ public class Queue {
             }
 
             for (UUID player : group) {
-                this.removePlayer(player, false);
-
                 HyriAPI.get().getServerManager().sendPlayerToServer(player, server.getName());
+
+                this.removePlayer(player);
                 players++;
+            }
+
+            try {
+                Thread.sleep(1000L);
+            } catch (InterruptedException e) {
+                throw new RuntimeException(e);
             }
         }
     }
@@ -260,21 +302,19 @@ public class Queue {
         HyriAPI.get().getNetworkManager().getEventBus().publish(new PlayerJoinQueueEvent(this.handle, player));
     }
 
-    public void removePlayer(UUID player, boolean event) {
-        this.handle.removePlayer(player);
-
-        if (event) {
-            HyriAPI.get().getNetworkManager().getEventBus().publish(new PlayerLeaveQueueEvent(this.handle, player));
-        }
-
-        this.updateInfo();
-
+    public void removePlayer(UUID player) {
         final IHyriPlayerSession session = IHyriPlayerSession.get(player);
 
         if (session != null) {
             session.setQueue(null);
             session.update();
         }
+
+        this.handle.removePlayer(player);
+
+        HyriAPI.get().getNetworkManager().getEventBus().publish(new PlayerLeaveQueueEvent(this.handle, player));
+
+        this.updateInfo();
     }
 
     public boolean containsPlayer(UUID playerId) {

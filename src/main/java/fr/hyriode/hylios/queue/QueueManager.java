@@ -62,7 +62,7 @@ public class QueueManager {
         final Queue playerQueue = this.getPlayerQueue(player);
 
         if (playerQueue != null) {
-            playerQueue.removePlayer(player, false);
+            playerQueue.removePlayer(player);
         }
 
         if (type == Type.GAME) {
@@ -100,7 +100,7 @@ public class QueueManager {
             return;
         }
 
-        playerQueue.removePlayer(player, true);
+        playerQueue.removePlayer(player);
     }
 
     private Queue getPlayerQueue(UUID playerId) {

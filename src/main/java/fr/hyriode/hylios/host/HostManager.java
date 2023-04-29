@@ -57,13 +57,7 @@ public class HostManager {
                 return;
             }
 
-            final long lifeTime = System.currentTimeMillis() - server.getStartedTime();
-
-            if (lifeTime < 10 * 1000L) {
-                HyriAPI.get().getScheduler().schedule(() -> HyriAPI.get().getServerManager().sendPlayerToServer(owner, serverName), 15 * 1000L - lifeTime, TimeUnit.MILLISECONDS);
-            } else {
-                HyriAPI.get().getServerManager().sendPlayerToServer(owner, serverName);
-            }
+            HyriAPI.get().getServerManager().sendPlayerToServer(owner, serverName);
         }
     }
 

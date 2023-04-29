@@ -32,6 +32,8 @@ public class ProxyBalancer {
 
         int neededProxies = (int) (Math.ceil((double) players * 1.5 / HyggProxy.MAX_PLAYERS));
 
+        System.out.println(neededProxies);
+
         if (neededProxies < minProxies) {
             neededProxies = minProxies;
         }
