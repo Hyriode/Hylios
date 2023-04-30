@@ -196,7 +196,6 @@ public class Queue {
                         throw new RuntimeException(e);
                     }
                 }
-
             } else {
                 for (Set<UUID> group : this.groupsQueue) {
                     for (UUID player : group) {
