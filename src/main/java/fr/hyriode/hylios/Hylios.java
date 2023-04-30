@@ -9,16 +9,12 @@ import fr.hyriode.hylios.booster.BoosterHandler;
 import fr.hyriode.hylios.config.HyliosConfig;
 import fr.hyriode.hylios.game.rotating.RotatingGameTask;
 import fr.hyriode.hylios.host.HostManager;
-import fr.hyriode.hylios.metrics.LiveCounterMetrics;
-import fr.hyriode.hylios.metrics.PacketMetrics;
-import fr.hyriode.hylios.metrics.PlayersMetrics;
 import fr.hyriode.hylios.party.PartyHandler;
 import fr.hyriode.hylios.queue.QueueManager;
 import fr.hyriode.hylios.util.IOUtil;
 import fr.hyriode.hylios.util.References;
 import fr.hyriode.hylios.util.logger.ColoredLogger;
 import fr.hyriode.hylios.world.WorldGenerationHandler;
-import fr.hyriode.hyreos.api.HyreosAPI;
 
 /**
  * Created by AstFaster
@@ -32,7 +28,6 @@ public class Hylios {
 
     private HyliosConfig config;
     private HyriAPIImpl hyriAPI;
-    private HyreosAPI hyreosAPI;
 
     private LobbyBalancer lobbyBalancer;
     private ProxyBalancer proxyBalancer;
@@ -60,8 +55,6 @@ public class Hylios {
                 .withDevEnvironment(false)
                 .withHyggdrasil(true)
                 .build(), References.NAME);
-        this.hyreosAPI = new HyreosAPI(this.hyriAPI.getRedisConnection().getPool());
-        this.hyreosAPI.start();
         this.lobbyBalancer = new LobbyBalancer();
         this.proxyBalancer = new ProxyBalancer();
         this.limboBalancer = new LimboBalancer();
@@ -70,10 +63,6 @@ public class Hylios {
         this.generationHandler = new WorldGenerationHandler();
         this.partyHandler = new PartyHandler();
         this.boosterHandler = new BoosterHandler();
-
-        new LiveCounterMetrics().start();
-        new PlayersMetrics().start();
-        new PacketMetrics().start();
 
         new RotatingGameTask().start();
 
@@ -84,7 +73,6 @@ public class Hylios {
         System.out.println("Stopping Hylios...");
 
         this.queueManager.disable();
-        this.hyreosAPI.stop();
     }
 
     public static Hylios get() {
@@ -101,10 +89,6 @@ public class Hylios {
 
     public HyriAPIImpl getHyriAPI() {
         return this.hyriAPI;
-    }
-
-    public HyreosAPI getHyreosAPI() {
-        return this.hyreosAPI;
     }
 
     public LobbyBalancer getLobbyBalancer() {
