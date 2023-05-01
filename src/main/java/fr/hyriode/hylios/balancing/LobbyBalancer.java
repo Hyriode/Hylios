@@ -55,10 +55,6 @@ public class LobbyBalancer {
 
                 final Queue<HyggServer> lobbies = new ArrayDeque<>(this.getWorkingLobbies());
 
-                for (HyggServer lobby : lobbies) {
-                    HyriAPI.get().getPubSub().send(HyriChannel.SERVERS, new RemoteStateEditPacket(lobby.getName(), HyggServer.State.SHUTDOWN));
-                }
-
                 if (lobbies.size() > 0)  {
                     this.restartLobby(lobbies.poll(), lobbies);
                 }
@@ -74,6 +70,7 @@ public class LobbyBalancer {
 
         this.startLobby(newLobby -> {
             HyriAPI.get().getNetworkManager().getEventBus().publish(new LobbyRestartingEvent(lobby.getName(), 30));
+            HyriAPI.get().getPubSub().send(HyriChannel.SERVERS, new RemoteStateEditPacket(lobby.getName(), HyggServer.State.SHUTDOWN));
 
             scheduler.schedule(() -> {
                 HyriAPI.get().getLobbyAPI().evacuateToLobby(lobby.getName());
