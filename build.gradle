@@ -25,13 +25,6 @@ allprojects {
     tasks.withType(Javadoc) {
         options.encoding = 'UTF-8'
     }
-
-    jar {
-        manifest {
-            attributes 'Specific-Version': project.version
-            attributes 'Implementation-Version': "${ project.version }-${ commitSha }-${ buildNumber }"
-        }
-    }
 }
 
 version = '1.0.0'

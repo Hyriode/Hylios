@@ -3,6 +3,20 @@ apply plugin: 'maven-publish'
 version = '1.0.0-SNAPSHOT'
 archivesBaseName = 'Hylios-API'
 
+java {
+    withSourcesJar()
+    withJavadocJar()
+
+    toolchain {
+        languageVersion = JavaLanguageVersion.of(8)
+    }
+}
+
+compileJava {
+    sourceCompatibility = JavaVersion.VERSION_1_8
+    options.encoding = 'UTF-8'
+}
+
 publishing {
     publications {
         maven(MavenPublication) {
