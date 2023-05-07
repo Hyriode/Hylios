@@ -1,0 +1,32 @@
+apply plugin: 'maven-publish'
+
+version = '1.0.0-SNAPSHOT'
+archivesBaseName = 'Hylios-API'
+
+publishing {
+    publications {
+        maven(MavenPublication) {
+            from components.java
+
+            pom {
+                groupId = project.group
+                artifactId = 'hylios-api'
+                version = project.version
+                name = 'HyliosAPI'
+                description = 'Official API of Hylios'
+                url = 'https://github.com/Hyriode/Hylios'
+            }
+        }
+    }
+
+    repositories {
+        maven {
+            credentials {
+                username System.getenv('GITHUB_USERNAME')
+                password System.getenv('GITHUB_TOKEN')
+            }
+            name = "Hylios_maven"
+            url = "https://maven.pkg.github.com/Hyriode/Hylios"
+        }
+    }
+}

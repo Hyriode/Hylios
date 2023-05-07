@@ -9,6 +9,8 @@ import fr.hyriode.hylios.booster.BoosterHandler;
 import fr.hyriode.hylios.config.HyliosConfig;
 import fr.hyriode.hylios.game.rotating.RotatingGameTask;
 import fr.hyriode.hylios.host.HostManager;
+import fr.hyriode.hylios.influx.InfluxDB;
+import fr.hyriode.hylios.metrics.MetricsManager;
 import fr.hyriode.hylios.party.PartyHandler;
 import fr.hyriode.hylios.queue.QueueManager;
 import fr.hyriode.hylios.util.IOUtil;
@@ -28,6 +30,7 @@ public class Hylios {
 
     private HyliosConfig config;
     private HyriAPIImpl hyriAPI;
+    private InfluxDB influxDB;
 
     private LobbyBalancer lobbyBalancer;
     private ProxyBalancer proxyBalancer;
@@ -37,6 +40,7 @@ public class Hylios {
     private WorldGenerationHandler generationHandler;
     private PartyHandler partyHandler;
     private BoosterHandler boosterHandler;
+    private MetricsManager metricsManager;
 
     public void start() {
         instance = this;
@@ -50,11 +54,13 @@ public class Hylios {
 
         this.config = HyliosConfig.load();
         this.hyriAPI = new HyriAPIImpl(new HyriAPIConfig.Builder()
-                .withRedisConfig(this.config.redisConfig())
-                .withMongoDBConfig(this.config.mongoDBConfig())
+                .withRedisConfig(this.config.redis())
+                .withMongoDBConfig(this.config.mongo())
                 .withDevEnvironment(false)
                 .withHyggdrasil(true)
                 .build(), References.NAME);
+        this.influxDB = new InfluxDB(this.config.influx());
+
         this.lobbyBalancer = new LobbyBalancer();
         this.proxyBalancer = new ProxyBalancer();
         this.limboBalancer = new LimboBalancer();
@@ -63,9 +69,12 @@ public class Hylios {
         this.generationHandler = new WorldGenerationHandler();
         this.partyHandler = new PartyHandler();
         this.boosterHandler = new BoosterHandler();
+        this.metricsManager = new MetricsManager();
+        this.metricsManager.initialize();
 
         new RotatingGameTask().start();
 
+        this.metricsManager.start();
         Runtime.getRuntime().addShutdownHook(new Thread(this::stop));
     }
 
@@ -89,6 +98,10 @@ public class Hylios {
 
     public HyriAPIImpl getHyriAPI() {
         return this.hyriAPI;
+    }
+
+    public InfluxDB getInfluxDB() {
+        return this.influxDB;
     }
 
     public LobbyBalancer getLobbyBalancer() {
@@ -123,4 +136,7 @@ public class Hylios {
         return this.boosterHandler;
     }
 
+    public MetricsManager getMetricsManager() {
+        return this.metricsManager;
+    }
 }
