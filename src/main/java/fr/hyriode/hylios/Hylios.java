@@ -1,5 +1,6 @@
 package fr.hyriode.hylios;
 
+import fr.hyriode.api.HyriAPI;
 import fr.hyriode.api.impl.application.HyriAPIImpl;
 import fr.hyriode.api.impl.application.config.HyriAPIConfig;
 import fr.hyriode.hylios.balancing.LimboBalancer;
@@ -70,11 +71,11 @@ public class Hylios {
         this.partyHandler = new PartyHandler();
         this.boosterHandler = new BoosterHandler();
         this.metricsManager = new MetricsManager();
-        this.metricsManager.initialize();
+        this.metricsManager.start();
 
         new RotatingGameTask().start();
 
-        this.metricsManager.start();
+        HyriAPI.get().getScheduler().runAsync(() -> this.metricsManager.initialize());
         Runtime.getRuntime().addShutdownHook(new Thread(this::stop));
     }
 

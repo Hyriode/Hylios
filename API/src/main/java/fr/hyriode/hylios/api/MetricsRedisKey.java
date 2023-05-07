@@ -10,7 +10,7 @@ public enum MetricsRedisKey {
 
     REGISTERED_PLAYERS("players:registered"),
 
-    HYRI_API_PACKETS("packets:hyriapi"),
+    HYRIAPI_PACKETS("packets:hyriapi"),
     HYGGDRASIL_PACKETS("packets:hyggdrasil");
 
     private final String key;

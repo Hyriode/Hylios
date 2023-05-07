@@ -3,9 +3,11 @@ package fr.hyriode.hylios.metrics.handler;
 import com.google.common.collect.Iterables;
 import com.google.common.collect.Sets;
 import fr.hyriode.api.HyriAPI;
+import fr.hyriode.api.player.IHyriPlayer;
 import fr.hyriode.hyggdrasil.api.limbo.HyggLimbo;
 import fr.hyriode.hyggdrasil.api.proxy.HyggProxy;
 import fr.hyriode.hyggdrasil.api.server.HyggServer;
+import fr.hyriode.hylios.Hylios;
 import fr.hyriode.hylios.metrics.data.IHyreosMetric;
 import fr.hyriode.hylios.metrics.data.service.PlayersPerGame;
 import fr.hyriode.hylios.metrics.data.service.PlayersPerService;
@@ -13,10 +15,7 @@ import fr.hyriode.hylios.metrics.data.service.ServiceType;
 import fr.hyriode.hylios.metrics.processor.IMetricHandler;
 import fr.hyriode.hylios.metrics.processor.IMultiMetricProcessor;
 
-import java.util.HashMap;
-import java.util.HashSet;
-import java.util.Map;
-import java.util.Set;
+import java.util.*;
 import java.util.stream.Collectors;
 
 public class ServiceMetricsHandler implements IMetricHandler {
@@ -76,6 +75,16 @@ public class ServiceMetricsHandler implements IMetricHandler {
 
         return players;
     };
+
+    @Override
+    public boolean isInitialized() {
+        return true;
+    }
+
+    @Override
+    public void initialize(List<IHyriPlayer> players) {
+        Hylios.get().getLogger().info("Initializing service metrics...");
+    }
 
     @Override
     public Set<IHyreosMetric> process() {

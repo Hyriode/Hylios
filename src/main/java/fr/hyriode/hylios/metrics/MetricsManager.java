@@ -3,53 +3,33 @@ package fr.hyriode.hylios.metrics;
 import fr.hyriode.api.HyriAPI;
 import fr.hyriode.api.player.IHyriPlayer;
 import fr.hyriode.hylios.Hylios;
-import fr.hyriode.hylios.api.HyliosMetricsRedisKey;
 import fr.hyriode.hylios.metrics.data.IHyreosMetric;
 import fr.hyriode.hylios.metrics.handler.MoneyMetricsHandler;
+import fr.hyriode.hylios.metrics.handler.NetworkMetricsHandler;
 import fr.hyriode.hylios.metrics.handler.PlayersMetricsHandler;
 import fr.hyriode.hylios.metrics.handler.ServiceMetricsHandler;
 import fr.hyriode.hylios.metrics.processor.IMetricHandler;
 
 import java.util.HashSet;
+import java.util.List;
 import java.util.Set;
 import java.util.concurrent.TimeUnit;
+import java.util.stream.Stream;
 
 public class MetricsManager {
 
     private final Set<IMetricHandler> metrics = new HashSet<>();
 
     public void initialize() {
-        for (final HyliosMetricsRedisKey key : HyliosMetricsRedisKey.values()) {
-            if (this.exists(key)) {
-                return;
-            }
-        }
+        final Stream<IMetricHandler> stream = this.metrics.stream().filter(IMetricHandler::isInitialized);
+        final List<IHyriPlayer> players = HyriAPI.get().getPlayerManager().getPlayers();
 
-        Hylios.get().getLogger().info("Metrics keys not found, creating them...");
-
-        long hyris = 0L;
-        long hyodes = 0L;
-        long hyriplus = 0L;
-        long registered = 0L;
-        for (final IHyriPlayer player : HyriAPI.get().getPlayerManager().getPlayers()) {
-            hyris += player.getHyris().getAmount();
-            hyodes += player.getHyodes().getAmount();
-
-            if (player.getHyriPlus().has()) {
-                hyriplus++;
-            }
-
-            registered++;
-        }
-
-        this.update(HyliosMetricsRedisKey.HYRIS, hyris);
-        this.update(HyliosMetricsRedisKey.HYODES, hyodes);
-        this.update(HyliosMetricsRedisKey.HYRI_PLUS, hyriplus);
-        this.update(HyliosMetricsRedisKey.REGISTERED_PLAYERS, registered);
+        stream.forEach(handler -> handler.initialize(players));
     }
 
     public void start() {
         this.metrics.add(new MoneyMetricsHandler());
+        this.metrics.add(new NetworkMetricsHandler());
         this.metrics.add(new PlayersMetricsHandler());
         this.metrics.add(new ServiceMetricsHandler());
 
@@ -60,14 +40,6 @@ public class MetricsManager {
         for (final IMetricHandler metric : this.metrics) {
             metric.process().forEach(this::save);
         }
-    }
-
-    private boolean exists(HyliosMetricsRedisKey key) {
-        return HyriAPI.get().getRedisProcessor().get(jedis -> jedis.exists(key.getKey()));
-    }
-
-    private void update(HyliosMetricsRedisKey key, long value) {
-        HyriAPI.get().getRedisProcessor().processAsync(jedis -> jedis.set(key.getKey(), String.valueOf(value)));
     }
 
     private void save(IHyreosMetric metric) {
