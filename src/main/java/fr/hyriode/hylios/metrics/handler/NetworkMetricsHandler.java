@@ -1,6 +1,7 @@
 package fr.hyriode.hylios.metrics.handler;
 
 import fr.hyriode.api.player.IHyriPlayer;
+import fr.hyriode.hylios.Hylios;
 import fr.hyriode.hylios.api.MetricsRedisKey;
 import fr.hyriode.hylios.metrics.data.IHyreosMetric;
 import fr.hyriode.hylios.metrics.data.network.AppType;
@@ -15,8 +16,8 @@ import java.util.Set;
 public class NetworkMetricsHandler implements IMetricHandler {
 
     private static final IMetricProcessor HYRIAPI = () -> {
-        final long packets = IMetricHandler.fetch(MetricsRedisKey.HYRI_API_PACKETS);
-        IMetricHandler.update(MetricsRedisKey.HYRI_API_PACKETS, 0);
+        final long packets = IMetricHandler.fetch(MetricsRedisKey.HYRIAPI_PACKETS);
+        IMetricHandler.update(MetricsRedisKey.HYRIAPI_PACKETS, 0);
 
         return new PacketsPerMinute(AppType.HYRIAPI, packets);
     };
@@ -34,7 +35,9 @@ public class NetworkMetricsHandler implements IMetricHandler {
 
     @Override
     public void initialize(List<IHyriPlayer> players) {
-        IMetricHandler.update(MetricsRedisKey.HYRI_API_PACKETS, 0);
+        Hylios.get().getLogger().info("Initializing network metrics...");
+
+        IMetricHandler.update(MetricsRedisKey.HYRIAPI_PACKETS, 0);
         IMetricHandler.update(MetricsRedisKey.HYGGDRASIL_PACKETS, 0);
     }
 

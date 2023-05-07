@@ -20,13 +20,6 @@ public class MetricsManager {
 
     private final Set<IMetricHandler> metrics = new HashSet<>();
 
-    public void initialize() {
-        final Stream<IMetricHandler> stream = this.metrics.stream().filter(IMetricHandler::isInitialized);
-        final List<IHyriPlayer> players = HyriAPI.get().getPlayerManager().getPlayers();
-
-        stream.forEach(handler -> handler.initialize(players));
-    }
-
     public void start() {
         this.metrics.add(new MoneyMetricsHandler());
         this.metrics.add(new NetworkMetricsHandler());
@@ -34,6 +27,13 @@ public class MetricsManager {
         this.metrics.add(new ServiceMetricsHandler());
 
         HyriAPI.get().getScheduler().schedule(this::process, 60, 60, TimeUnit.SECONDS);
+    }
+
+    public void initialize() {
+        final Stream<IMetricHandler> stream = this.metrics.stream().filter(IMetricHandler::isInitialized);
+        final List<IHyriPlayer> players = HyriAPI.get().getPlayerManager().getPlayers();
+
+        stream.forEach(handler -> handler.initialize(players));
     }
 
     public void process() {

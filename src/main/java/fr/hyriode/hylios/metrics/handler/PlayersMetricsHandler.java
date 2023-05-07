@@ -37,11 +37,11 @@ public class PlayersMetricsHandler implements IMetricHandler {
     public boolean isInitialized() {
         boolean ranks = true;
         for (final PlayerRank rank : PlayerRank.values()) {
-            ranks &= this.exists(String.format(MetricsRedisKey.RANKS.getKey(), rank.getName()));
+            ranks &= IMetricHandler.exists(String.format(MetricsRedisKey.RANKS.getKey(), rank.getName()));
         }
 
-        final boolean hyriPlus = this.exists(MetricsRedisKey.HYRI_PLUS);
-        final boolean registered = this.exists(MetricsRedisKey.REGISTERED_PLAYERS);
+        final boolean hyriPlus = IMetricHandler.exists(MetricsRedisKey.HYRI_PLUS);
+        final boolean registered = IMetricHandler.exists(MetricsRedisKey.REGISTERED_PLAYERS);
 
         return ranks && hyriPlus && registered;
     }
@@ -70,11 +70,11 @@ public class PlayersMetricsHandler implements IMetricHandler {
         for (final PlayerRank rank : PlayerRank.values()) {
             final String key = String.format(MetricsRedisKey.RANKS.getKey(), rank.getName());
 
-            this.update(key, ranks.get(rank));
+            IMetricHandler.update(key, ranks.get(rank));
         }
 
-        this.update(MetricsRedisKey.HYRI_PLUS, hyriPlus);
-        this.update(MetricsRedisKey.REGISTERED_PLAYERS, registered);
+        IMetricHandler.update(MetricsRedisKey.HYRI_PLUS, hyriPlus);
+        IMetricHandler.update(MetricsRedisKey.REGISTERED_PLAYERS, registered);
     }
 
     @Override

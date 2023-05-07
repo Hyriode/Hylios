@@ -19,8 +19,8 @@ public class MoneyMetricsHandler implements IMetricHandler {
 
     @Override
     public boolean isInitialized() {
-        final boolean hyris = this.exists(MetricsRedisKey.HYRIS);
-        final boolean hyodes = this.exists(MetricsRedisKey.HYODES);
+        final boolean hyris = IMetricHandler.exists(MetricsRedisKey.HYRIS);
+        final boolean hyodes = IMetricHandler.exists(MetricsRedisKey.HYODES);
 
         return hyris && hyodes;
     }
@@ -36,8 +36,8 @@ public class MoneyMetricsHandler implements IMetricHandler {
             hyodes += player.getHyodes().getAmount();
         }
 
-        this.update(MetricsRedisKey.HYRIS, hyris);
-        this.update(MetricsRedisKey.HYODES, hyodes);
+        IMetricHandler.update(MetricsRedisKey.HYRIS, hyris);
+        IMetricHandler.update(MetricsRedisKey.HYODES, hyodes);
     }
 
 
