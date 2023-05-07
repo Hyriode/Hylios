@@ -2,8 +2,10 @@ package fr.hyriode.hylios.metrics.processor;
 
 import fr.hyriode.hylios.metrics.data.IHyreosMetric;
 
-@FunctionalInterface
-public interface IMetricProcessor {
+import java.util.Set;
 
-    IHyreosMetric process();
+@FunctionalInterface
+public interface IMultiMetricProcessor {
+
+    Set<IHyreosMetric> process();
 }

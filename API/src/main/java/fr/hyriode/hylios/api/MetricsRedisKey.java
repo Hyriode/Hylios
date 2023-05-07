@@ -1,10 +1,11 @@
 package fr.hyriode.hylios.api;
 
-public enum HyliosMetricsRedisKey {
+public enum MetricsRedisKey {
 
     HYRIS("money:hyris"),
     HYODES("money:hyodes"),
 
+    RANKS("ranks:%s"),
     HYRI_PLUS("ranks:hyriplus"),
 
     REGISTERED_PLAYERS("players:registered"),
@@ -14,8 +15,8 @@ public enum HyliosMetricsRedisKey {
 
     private final String key;
 
-    HyliosMetricsRedisKey(String key) {
-        this.key = "hyreos:metrics:" + key;
+    MetricsRedisKey(String key) {
+        this.key = "hylios:metrics:" + key;
     }
 
     public String getKey() {
