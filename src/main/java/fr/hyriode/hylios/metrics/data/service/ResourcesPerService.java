@@ -2,6 +2,7 @@ package fr.hyriode.hylios.metrics.data.service;
 
 import com.influxdb.annotations.Column;
 import com.influxdb.annotations.Measurement;
+import fr.hyriode.hyggdrasil.api.service.IHyggServiceResources;
 import fr.hyriode.hylios.metrics.data.IHyreosMetric;
 
 import java.time.Instant;
@@ -33,6 +34,22 @@ public class ResourcesPerService implements IHyreosMetric {
 
     @Column(timestamp = true)
     private final Instant time;
+
+    public ResourcesPerService(ServiceType type, String name, IHyggServiceResources resources) {
+        this.type = type;
+        this.name = name;
+
+        this.totalCpuUsage = resources.getTotalCpuUsage();
+        this.cpuUsages = resources.getCpuUsages();
+        this.systemCpuUsage = resources.getSystemCpuUsage();
+        this.availableCpus = resources.getAvailableCpus();
+
+        this.memoryUsage = resources.getMemoryUsage();
+        this.memoryMax = resources.getMemoryMax();
+        this.memoryLimit = resources.getMemoryLimit();
+
+        this.time = Instant.now();
+    }
 
     public ResourcesPerService(ServiceType type, String name, long totalCpuUsage, List<Long> cpuUsages, long systemCpuUsage, long availableCpus, long memoryUsage, long memoryMax, long memoryLimit) {
         this.type = type;

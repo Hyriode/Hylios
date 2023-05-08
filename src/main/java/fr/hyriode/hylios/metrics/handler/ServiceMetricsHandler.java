@@ -4,18 +4,20 @@ import com.google.common.collect.Iterables;
 import com.google.common.collect.Sets;
 import fr.hyriode.api.HyriAPI;
 import fr.hyriode.api.player.IHyriPlayer;
-import fr.hyriode.hyggdrasil.api.limbo.HyggLimbo;
-import fr.hyriode.hyggdrasil.api.proxy.HyggProxy;
 import fr.hyriode.hyggdrasil.api.server.HyggServer;
+import fr.hyriode.hyggdrasil.api.service.IHyggService;
+import fr.hyriode.hyggdrasil.api.service.IHyggServiceResources;
 import fr.hyriode.hylios.Hylios;
 import fr.hyriode.hylios.metrics.data.IHyreosMetric;
 import fr.hyriode.hylios.metrics.data.service.PlayersPerGame;
 import fr.hyriode.hylios.metrics.data.service.PlayersPerService;
+import fr.hyriode.hylios.metrics.data.service.ResourcesPerService;
 import fr.hyriode.hylios.metrics.data.service.ServiceType;
 import fr.hyriode.hylios.metrics.processor.IMetricHandler;
 import fr.hyriode.hylios.metrics.processor.IMultiMetricProcessor;
 
 import java.util.*;
+import java.util.function.BiFunction;
 import java.util.stream.Collectors;
 
 public class ServiceMetricsHandler implements IMetricHandler {
@@ -36,44 +38,31 @@ public class ServiceMetricsHandler implements IMetricHandler {
 
         return players.entrySet().stream().map(PlayersPerGame.PROCESSOR).collect(Collectors.toSet());
     };
-    private static final IMultiMetricProcessor PLAYERS_PER_LIMBO = () -> {
+    private static final BiFunction<ServiceType, Set<? extends IHyggService>, Set<IHyreosMetric>> PLAYERS_PER_SERVICE = (type, services) -> {
         final Set<IHyreosMetric> players = new HashSet<>();
 
-        for (final HyggLimbo limbo : HyriAPI.get().getLimboManager().getLimbos()) {
-            final int count = limbo.getPlayers().size();
-            final String name = limbo.getName();
+        for (final IHyggService service : services) {
+            final int count = service.getPlayers().size();
+            final String name = service.getName();
 
-            final IHyreosMetric metric = new PlayersPerService(ServiceType.LIMBO, name, count);
+            final IHyreosMetric metric = new PlayersPerService(type, name, count);
             players.add(metric);
         }
 
         return players;
     };
-    private static final IMultiMetricProcessor PLAYERS_PER_SERVER = () -> {
-        final Set<IHyreosMetric> players = new HashSet<>();
+    private static final BiFunction<ServiceType, Set<? extends IHyggService>, Set<IHyreosMetric>> RESOURCES_PER_SERVICE = (type, services) -> {
+        final Set<IHyreosMetric> resources = new HashSet<>();
 
-        for (final HyggServer server : HyriAPI.get().getServerManager().getServers()) {
-            final int count = server.getPlayers().size();
-            final String name = server.getName();
+        for (final IHyggService service : services) {
+            final IHyggServiceResources container = service.getContainerResources().fetch();
+            final String name = service.getName();
 
-            final IHyreosMetric metric = new PlayersPerService(ServiceType.SERVER, name, count);
-            players.add(metric);
+            final IHyreosMetric metric = new ResourcesPerService(type, name, container);
+            resources.add(metric);
         }
 
-        return players;
-    };
-    private static final IMultiMetricProcessor PLAYERS_PER_PROXY = () -> {
-        final Set<IHyreosMetric> players = new HashSet<>();
-
-        for (final HyggProxy proxy : HyriAPI.get().getProxyManager().getProxies()) {
-            final int count = proxy.getPlayers().size();
-            final String name = proxy.getName();
-
-            final IHyreosMetric metric = new PlayersPerService(ServiceType.PROXY, name, count);
-            players.add(metric);
-        }
-
-        return players;
+        return resources;
     };
 
     @Override
@@ -88,11 +77,18 @@ public class ServiceMetricsHandler implements IMetricHandler {
 
     @Override
     public Set<IHyreosMetric> process() {
+        final Set<? extends IHyggService> limbos = HyriAPI.get().getLimboManager().getLimbos();
+        final Set<? extends IHyggService> servers = HyriAPI.get().getServerManager().getServers();
+        final Set<? extends IHyggService> proxies = HyriAPI.get().getProxyManager().getProxies();
+
         return Sets.newHashSet(Iterables.concat(
                 PLAYERS_PER_GAME.process(),
-                PLAYERS_PER_LIMBO.process(),
-                PLAYERS_PER_SERVER.process(),
-                PLAYERS_PER_PROXY.process()
+                PLAYERS_PER_SERVICE.apply(ServiceType.LIMBO, limbos),
+                PLAYERS_PER_SERVICE.apply(ServiceType.SERVER, servers),
+                PLAYERS_PER_SERVICE.apply(ServiceType.PROXY, proxies),
+                RESOURCES_PER_SERVICE.apply(ServiceType.LIMBO, limbos),
+                RESOURCES_PER_SERVICE.apply(ServiceType.SERVER, servers),
+                RESOURCES_PER_SERVICE.apply(ServiceType.PROXY, proxies)
         ));
     }
 }
