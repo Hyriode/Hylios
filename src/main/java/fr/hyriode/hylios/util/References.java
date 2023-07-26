@@ -15,5 +15,6 @@ public class References {
     /** Files */
     public static final Path LOG_FOLDER = Paths.get(USER_DIR, "logs");
     public static final Path LOG_FILE = Paths.get(LOG_FOLDER.toString(), "hylios.log");
+    public static final Path TEMPLATES_FOLDER = Paths.get(USER_DIR, "templates");
 
 }

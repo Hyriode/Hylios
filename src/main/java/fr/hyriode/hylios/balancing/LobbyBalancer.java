@@ -11,6 +11,7 @@ import fr.hyriode.hyggdrasil.api.event.model.HyggTemplateUpdatedEvent;
 import fr.hyriode.hyggdrasil.api.server.HyggServer;
 import fr.hyriode.hyggdrasil.api.server.HyggServerCreationInfo;
 import fr.hyriode.hylios.Hylios;
+import fr.hyriode.hylios.server.template.Template;
 import fr.hyriode.hylios.util.HyliosException;
 
 import java.util.*;
@@ -26,6 +27,8 @@ import java.util.stream.Collectors;
 public class LobbyBalancer {
 
     private boolean restarting = false;
+
+    private final Template.Mode template = Hylios.get().getTemplateManager().getTemplate(ILobbyAPI.TYPE).getDefaultMode();
 
     public LobbyBalancer() {
         System.out.println("Starting lobbies balancing tasks...");
@@ -107,8 +110,8 @@ public class LobbyBalancer {
 
                 this.evacuateLobby(lobby); // Evacuate the lobby
 
-                try { // Wait 1s for proxies to evacuate players
-                    Thread.sleep(1000L);
+                try { // Wait 2s for proxies to evacuate players
+                    Thread.sleep(2000L);
                 } catch (InterruptedException e) {
                     throw new HyliosException(e);
                 }
@@ -147,18 +150,22 @@ public class LobbyBalancer {
     }
 
     private void startLobby(Consumer<HyggServer> onStarted) {
+        final Template.Resources resources = this.template.getResources();
         final HyggServerCreationInfo request = new HyggServerCreationInfo(ILobbyAPI.TYPE)
                 .withAccessibility(HyggServer.Accessibility.PUBLIC)
                 .withProcess(HyggServer.Process.PERMANENT)
-                .withSlots(ILobbyAPI.MAX_PLAYERS);
+                .withSlots(ILobbyAPI.MAX_PLAYERS)
+                .withMaxMemory(resources.getMaxMemory())
+                .withMinMemory(resources.getMinMemory())
+                .withCpus(resources.getCpus());
 
-        HyriAPI.get().getServerManager().createServer(request, onStarted);
+        Hylios.get().getServersStarter().startServer(request, onStarted);
     }
 
     private int neededLobbies() {
         final int minLobbies = Hylios.get().getConfig().minLobbies();
 
-        int neededLobbies = (int) Math.ceil((double) this.getLobbyPlayers() * 1.5 / ILobbyAPI.MAX_PLAYERS); // The "perfect" amount of lobbies needed
+        int neededLobbies = (int) Math.ceil((double) this.getLobbyPlayers() * 1.35 / ILobbyAPI.MAX_PLAYERS); // The "perfect" amount of lobbies needed
 
         if (neededLobbies < minLobbies) {
             neededLobbies = minLobbies;

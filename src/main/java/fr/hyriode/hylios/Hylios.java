@@ -11,6 +11,9 @@ import fr.hyriode.hylios.game.rotating.RotatingGameTask;
 import fr.hyriode.hylios.host.HostManager;
 import fr.hyriode.hylios.party.PartyHandler;
 import fr.hyriode.hylios.queue.QueueManager;
+import fr.hyriode.hylios.server.ServersPoolContainer;
+import fr.hyriode.hylios.server.ServersStarter;
+import fr.hyriode.hylios.server.template.TemplateManager;
 import fr.hyriode.hylios.util.IOUtil;
 import fr.hyriode.hylios.util.References;
 import fr.hyriode.hylios.util.logger.ColoredLogger;
@@ -28,6 +31,10 @@ public class Hylios {
 
     private HyliosConfig config;
     private HyriAPIImpl hyriAPI;
+
+    private TemplateManager templateManager;
+    private ServersStarter serversStarter;
+    private ServersPoolContainer serversPoolContainer;
 
     private LobbyBalancer lobbyBalancer;
     private ProxyBalancer proxyBalancer;
@@ -55,6 +62,9 @@ public class Hylios {
                 .withDevEnvironment(false)
                 .withHyggdrasil(true)
                 .build(), References.NAME);
+        this.templateManager = new TemplateManager();
+        this.serversStarter = new ServersStarter();
+        this.serversPoolContainer = new ServersPoolContainer();
         this.lobbyBalancer = new LobbyBalancer();
         this.proxyBalancer = new ProxyBalancer();
         this.limboBalancer = new LimboBalancer();
@@ -73,6 +83,8 @@ public class Hylios {
         System.out.println("Stopping Hylios...");
 
         this.queueManager.disable();
+        this.serversPoolContainer.disable();
+        this.serversStarter.disable();
     }
 
     public static Hylios get() {
@@ -89,6 +101,18 @@ public class Hylios {
 
     public HyriAPIImpl getHyriAPI() {
         return this.hyriAPI;
+    }
+
+    public TemplateManager getTemplateManager() {
+        return this.templateManager;
+    }
+
+    public ServersStarter getServersStarter() {
+        return this.serversStarter;
+    }
+
+    public ServersPoolContainer getServersPoolContainer() {
+        return this.serversPoolContainer;
     }
 
     public LobbyBalancer getLobbyBalancer() {

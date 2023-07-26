@@ -13,6 +13,7 @@ import fr.hyriode.api.scheduler.IHyriTask;
 import fr.hyriode.hyggdrasil.api.server.HyggServer;
 import fr.hyriode.hyggdrasil.api.server.HyggServerCreationInfo;
 import fr.hyriode.hylios.Hylios;
+import fr.hyriode.hylios.server.ServersPool;
 
 import java.net.InetSocketAddress;
 import java.util.*;
@@ -28,10 +29,13 @@ import static fr.hyriode.api.queue.IHyriQueue.Type;
  */
 public class Queue {
 
-    private final PriorityBlockingQueue<Set<UUID>> groupsQueue;
+    private final PriorityBlockingQueue<Set<UUID>> groupsQueue = new PriorityBlockingQueue<>(1000, Comparator.comparingInt(this::calculatePriority));
+
+    private long lastProcess;
 
     private final IHyriTask playersProcess;
-    private IHyriTask startingProcess;
+
+    private ServersPool serversPool;
 
     private final HyriQueue handle;
 
@@ -41,24 +45,17 @@ public class Queue {
 
     public Queue(String game, String gameType, String map) {
         this(new HyriQueue(Type.GAME, game, gameType, map, null));
+        this.serversPool = Hylios.get().getServersPoolContainer().getPool(game, gameType);
+        System.out.println("Pool:" + this.serversPool);
     }
 
     private Queue(HyriQueue handle) {
         this.handle = handle;
-        this.groupsQueue = new PriorityBlockingQueue<>(100000, Comparator.comparingInt(this::calculatePriority));
-        this.playersProcess = HyriAPI.get().getScheduler().schedule(this::processPlayers, 0, 500, TimeUnit.MILLISECONDS);
-
-        if (this.handle.getType() == Type.GAME) {
-            this.startingProcess = HyriAPI.get().getScheduler().schedule(this::processServersStarting, 0, 2, TimeUnit.SECONDS);
-        }
+        this.playersProcess = HyriAPI.get().getScheduler().schedule(this::processPlayers, 500, 500, TimeUnit.MILLISECONDS);
     }
 
     public void disable() {
         this.playersProcess.cancel();
-
-        if (this.startingProcess != null) {
-            this.startingProcess.cancel();
-        }
 
         for (UUID player : this.handle.getPlayers()) {
             final IHyriPlayerSession session = IHyriPlayerSession.get(player);
@@ -79,28 +76,37 @@ public class Queue {
     private void processPlayers() {
         this.groupsQueue.addAll(this.handle.getTotalPlayers());
 
+        // The queue has been empty for a minute, no need to keep it enabled
+        if (this.groupsQueue.size() == 0 && System.currentTimeMillis() - this.lastProcess >= 60 * 1000L) {
+            this.disable();
+        }
+
         if (this.handle.getType() == Type.GAME) {
             this.processGame();
         } else if (this.handle.getType() == Type.SERVER) {
             this.processServer();
         }
 
+        if (this.groupsQueue.size() > 0) {
+            this.lastProcess = System.currentTimeMillis();
+        }
+
         this.groupsQueue.clear(); // Finally, clear process queue
     }
 
     private void processGame() {
-        final List<HyggServer> availableServers = new ArrayList<>(this.getGameServers().stream()
-                .filter(server -> server.getState() == HyggServer.State.READY)
+        this.serversPool.requestServersFor(this.groupsQueue.stream().mapToInt(Set::size).sum());
+
+        final List<HyggServer> availableServers = new ArrayList<>(this.serversPool.getReadyServers()).stream()
                 .filter(server -> server.getPlayingPlayers().size() < server.getSlots())
-                .filter(server -> System.currentTimeMillis() - server.getStartedTime() > 15 * 1000L)
                 .sorted((o1, o2) -> o2.getPlayingPlayers().size() - o1.getPlayingPlayers().size()) // Sort servers by the highest amount of players
-                .toList()); // Get servers that players could join
+                .toList();
 
-        final Map<String, Integer> players = new HashMap<>(); // Create a copy of players (for synchronisation)
-
-        for (HyggServer server : availableServers) {
-            players.put(server.getName(), server.getPlayingPlayers().size());
+        if (availableServers.size() == 0) {
+            return;
         }
+
+        final Map<String, Integer> players = availableServers.stream().collect(Collectors.toMap(HyggServer::getName, server -> server.getPlayingPlayers().size(), (a, b) -> b)); // Create a copy of players (for synchronisation)
 
         for (Set<UUID> group : this.groupsQueue) {
             for (HyggServer server : availableServers) { // Check for a good server
@@ -117,31 +123,6 @@ public class Queue {
                     players.put(serverName, serverPlayers + group.size()); // Add teleported players in the copy
                     break;
                 }
-            }
-        }
-    }
-
-    private void processServersStarting() {
-        final List<HyggServer> servers = this.getGameServers();
-        final List<HyggServer> potentialServers = servers.stream().filter(server -> server.getState() != HyggServer.State.PLAYING).toList();
-        final int totalPlayers = servers.stream().mapToInt(server -> server.getPlayingPlayers().size()).sum() + this.groupsQueue.stream().mapToInt(Set::size).sum(); // Playing players + players in queue
-        final int slots = servers.stream()
-                .filter(server -> server.getSlots() != -1)
-                .findFirst()
-                .map(HyggServer::getSlots)
-                .orElse(-1);
-        final int neededServers = slots == -1 ? 1 : (int) Math.ceil((double) totalPlayers * 1.5 / slots);
-
-        if (potentialServers.size() < neededServers) { // Not enough servers started
-            for (int i = 0; i < neededServers - potentialServers.size(); i++) {
-                final HyggServerCreationInfo serverInfo = new HyggServerCreationInfo(this.handle.getGame())
-                        .withGameType(this.handle.getGameType())
-                        .withMap(this.handle.getMap())
-                        .withProcess(HyggServer.Process.TEMPORARY)
-                        .withAccessibility(HyggServer.Accessibility.PUBLIC)
-                        .withSlots(slots);
-
-                HyriAPI.get().getServerManager().createServer(serverInfo, null); // Create a new server
             }
         }
     }

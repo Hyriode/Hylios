@@ -51,6 +51,9 @@ public class WorldGenerationHandler {
                 final HyggServerCreationInfo request = new HyggServerCreationInfo(IWorldGenerationAPI.SERVERS_TYPE)
                         .withAccessibility(HyggServer.Accessibility.PUBLIC)
                         .withProcess(HyggServer.Process.TEMPORARY)
+                        .withMinMemory("32M")
+                        .withMaxMemory("2G")
+                        .withCpus(1.5D)
                         .withData(data);
 
                 HyriAPI.get().getServerManager().createServer(request, null);

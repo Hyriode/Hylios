@@ -13,7 +13,7 @@ import java.nio.file.Paths;
  * Created by AstFaster
  * on 14/07/2022 at 13:09
  */
-public record HyliosConfig(RedisConfig redisConfig, MongoDBConfig mongoDBConfig, int minLobbies, int minProxies, int minLimbos) {
+public record HyliosConfig(RedisConfig redisConfig, MongoDBConfig mongoDBConfig, int minLobbies, int minProxies, int minLimbos, int maxStartingServers) {
 
     public static final Path CONFIG_FILE = Paths.get("config.json");
 
@@ -30,7 +30,7 @@ public record HyliosConfig(RedisConfig redisConfig, MongoDBConfig mongoDBConfig,
         if (!json.equals("")) {
             return gson.fromJson(json, HyliosConfig.class);
         } else {
-            final HyliosConfig config = new HyliosConfig(new RedisConfig("127.0.0.1", 6379, ""), new MongoDBConfig(null, null, "127.0.0.1", 27017), 1, 1, 1);
+            final HyliosConfig config = new HyliosConfig(new RedisConfig("127.0.0.1", 6379, ""), new MongoDBConfig(null, null, "127.0.0.1", 27017), 1, 1, 1, 10);
 
             IOUtil.save(CONFIG_FILE, gson.toJson(config));
 
