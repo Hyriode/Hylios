@@ -2,27 +2,37 @@ plugins {
     id "com.github.johnrengelman.shadow" version "7.1.2"
 }
 
-apply plugin: 'idea'
-apply plugin: 'java-library'
+allprojects {
+    apply plugin: 'idea'
+    apply plugin: 'java-library'
 
-group = 'fr.hyriode'
-version = '1.0.0'
-archivesBaseName = 'Hylios'
+    group = 'fr.hyriode'
 
-java {
-    toolchain {
-        languageVersion = JavaLanguageVersion.of(18)
+    java {
+        withSourcesJar()
+        withJavadocJar()
+
+        toolchain {
+            languageVersion = JavaLanguageVersion.of(18)
+        }
+    }
+
+    compileJava {
+        sourceCompatibility = JavaVersion.VERSION_18
+        options.encoding = 'UTF-8'
+    }
+
+    tasks.withType(Javadoc) {
+        options.encoding = 'UTF-8'
     }
 }
+
+version = '1.0.0'
+archivesBaseName = 'Hylios'
 
 configurations.all {
     // Check for updates every build
     resolutionStrategy.cacheChangingModulesFor 0, 'seconds'
-}
-
-compileJava {
-    sourceCompatibility = JavaVersion.VERSION_18
-    options.encoding = 'UTF-8'
 }
 
 repositories {
@@ -50,7 +60,7 @@ shadowJar {
 }
 
 dependencies {
-//    implementation fileTree(include: ['*.jar'], dir: 'libs')
+    implementation "com.influxdb:influxdb-client-java:6.6.0"
     implementation 'fr.hyriode:hyriapi-app:1.5.2-SNAPSHOT'
     implementation 'jline:jline:2.14.6'
     implementation 'org.yaml:snakeyaml:2.0'

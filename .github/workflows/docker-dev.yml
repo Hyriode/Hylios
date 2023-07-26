@@ -5,7 +5,7 @@ on:
     branches: [ develop ]
 
 jobs:
-  build:
+  docker-dev:
     runs-on: ubuntu-latest
 
     steps:
@@ -15,6 +15,7 @@ jobs:
       - name: Build and tag image
         run: docker build -t "ghcr.io/hyriode/hylios:dev" -f Dockerfile . --build-arg GITHUB_USERNAME=$GITHUB_ACTOR --build-arg GITHUB_TOKEN=$GITHUB_TOKEN
         env:
+          GITHUB_USERNAME: ${{ github.actor }}
           GITHUB_TOKEN: ${{ secrets.TOKEN }}
 
       - name: Docker login

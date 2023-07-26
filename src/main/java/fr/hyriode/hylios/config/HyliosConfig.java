@@ -40,5 +40,4 @@ public record HyliosConfig(RedisConfig redisConfig, MongoDBConfig mongoDBConfig,
             return config;
         }
     }
-
 }
